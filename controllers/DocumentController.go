@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"image/png"
 	"fmt"
+	//"log"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
 	"github.com/boombuler/barcode"
@@ -139,6 +140,19 @@ func (c *DocumentController) Read() {
 	if err == nil {
 		doc.AttachList = attach
 	}
+	
+	docInfo := ""
+	docCreator, err := models.NewMember().Find(doc.MemberId)
+	if err == nil {
+		docInfo += docCreator.Account
+	}
+	docInfo += " 创建于 "
+	docInfo += doc.CreateTime.Format("2006-01-02 15:04")
+
+	if doc.ModifyTime != doc.CreateTime {
+		docInfo += "；更新于 "
+		docInfo += doc.ModifyTime.Format("2006-01-02 15:04")
+	}
 
 	if c.IsAjax() {
 		var data struct {
@@ -146,11 +160,13 @@ func (c *DocumentController) Read() {
 			Body     string `json:"body"`
 			Title    string `json:"title"`
 			Version  int64  `json:"version"`
+			Info  string `json:"doc_info"`
 		}
 		data.DocTitle = doc.DocumentName
 		data.Body = doc.Release
 		data.Title = doc.DocumentName + " - Powered by MinDoc"
 		data.Version = doc.Version
+		data.Info = docInfo
 
 		c.JsonResult(0, "ok", data)
 	}
@@ -168,6 +184,7 @@ func (c *DocumentController) Read() {
 	c.Data["Model"] = bookResult
 	c.Data["Result"] = template.HTML(tree)
 	c.Data["Title"] = doc.DocumentName
+	c.Data["Info"] = docInfo
 	c.Data["Content"] = template.HTML(doc.Release)
 }
 
@@ -877,6 +894,123 @@ func (c *DocumentController) Export() {
 		c.Abort("200")
 	} else if output == "docx" && filetil.FileExists(docxpath) {
 		c.Ctx.Output.Download(docxpath, bookResult.BookName+".docx")
+
+		c.Abort("200")
+
+	} else if output == "pdf" || output == "epub" || output == "docx" || output == "mobi" {
+		if err := models.BackgroundConvert(c.CruSession.SessionID(), bookResult); err != nil && err != gopool.ErrHandlerIsExist {
+			c.ShowErrorPage(500, "导出失败，请查看系统日志")
+		}
+
+		c.ShowErrorPage(200, "文档正在后台转换，请稍后再下载")
+	} else {
+		c.ShowErrorPage(200, "不支持的文件格式")
+	}
+
+	c.ShowErrorPage(404, "项目没有导出文件")
+}
+
+func (c *DocumentController) ExportDoc() {
+
+	c.Prepare()
+
+	identify := c.Ctx.Input.Param(":key")
+	id := c.Ctx.Input.Param(":id")
+	token := c.GetString("token")
+	output := c.GetString("output")
+
+	if identify == "" || id == "" {
+		c.ShowErrorPage(404, "项目不存或已删除")
+	}
+
+	// 如果没有开启匿名访问则跳转到登录
+	if !c.EnableAnonymous && !c.isUserLoggedIn() {
+		promptUserToLogIn(c)
+		return
+	}
+	if !conf.GetEnableExport() {
+		c.ShowErrorPage(500, "系统没有开启导出功能")
+	}
+
+	bookResult := models.NewBookResult()
+	if c.Member != nil && c.Member.IsAdministrator() {
+		book, err := models.NewBook().FindByIdentify(identify)
+		if err != nil {
+			if err == orm.ErrNoRows {
+				c.ShowErrorPage(404, "项目不存在")
+			} else {
+				beego.Error("查找项目时出错 ->", err)
+				c.ShowErrorPage(500, "查找项目时出错")
+			}
+		}
+		bookResult = models.NewBookResult().ToBookResult(*book)
+	} else {
+		bookResult = c.isReadable(identify, token)
+	}
+
+	doc := models.NewDocument()
+
+	if docId, err := strconv.Atoi(id); err == nil {
+		doc, err = doc.FromCacheById(docId)
+		if err != nil {
+			beego.Error("从缓存中读取文档时失败 ->", err)
+			c.ShowErrorPage(404, "文档不存在或已删除")
+		}
+	} else {
+		doc, err = doc.FromCacheByIdentify(id, bookResult.BookId)
+		if err != nil {
+			if err == orm.ErrNoRows {
+				c.ShowErrorPage(404, "文档不存在或已删除")
+			} else {
+				beego.Error("从缓存查询文档时出错 ->", err)
+				c.ShowErrorPage(500, "未知异常")
+			}
+		}
+	}
+
+	if doc.BookId != bookResult.BookId {
+		c.ShowErrorPage(404, "文档不存在或已删除")
+	}
+
+	if !bookResult.IsDownload {
+		c.ShowErrorPage(200, "当前项目没有开启导出功能")
+	}
+
+	if output == "markdown" {
+		if bookResult.Editor != "markdown" {
+			c.ShowErrorPage(500, "当前项目不支持Markdown编辑器")
+		}
+		p, err := doc.ExportMarkdown(c.CruSession.SessionID())
+
+		if err != nil {
+			c.ShowErrorPage(500, "导出文档失败")
+		}
+		c.Ctx.Output.Download(p, bookResult.BookName+".zip")
+
+		c.StopRun()
+		return
+	}
+
+	outputPath := filepath.Join(conf.GetExportOutputPath(), strconv.Itoa(bookResult.BookId))
+	documentId := strconv.Itoa(doc.DocumentId)
+	pdfpath := filepath.Join(outputPath, documentId+".pdf")
+	epubpath := filepath.Join(outputPath, documentId+".epub")
+	mobipath := filepath.Join(outputPath, documentId+".mobi")
+	docxpath := filepath.Join(outputPath, documentId+".docx")
+
+	if output == "pdf" && filetil.FileExists(pdfpath) {
+		c.Ctx.Output.Download(pdfpath, documentId+".pdf")
+		c.Abort("200")
+	} else if output == "epub" && filetil.FileExists(epubpath) {
+		c.Ctx.Output.Download(epubpath, documentId+".epub")
+
+		c.Abort("200")
+	} else if output == "mobi" && filetil.FileExists(mobipath) {
+		c.Ctx.Output.Download(mobipath, documentId+".mobi")
+
+		c.Abort("200")
+	} else if output == "docx" && filetil.FileExists(docxpath) {
+		c.Ctx.Output.Download(docxpath, documentId+".docx")
 
 		c.Abort("200")
 

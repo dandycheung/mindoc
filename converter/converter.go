@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"log"
 
 	"time"
 	"os/exec"
@@ -63,6 +64,7 @@ type Config struct {
 	MarginBottom string   `json:"margin_bottom"` //PDF文档左边距，写数字即可，默认72pt
 	More         []string `json:"more"`          //更多导出选项[PDF导出选项，具体参考：https://manual.calibre-ebook.com/generated/en/ebook-convert.html#pdf-output-options]
 	Toc          []Toc    `json:"toc"`           //目录
+	Type         string   `json:"type"`           //目录
 	///////////////////////////////////////////
 	Order []string `json:"-"` //这个不需要赋值
 }
@@ -421,9 +423,12 @@ func (this *Converter) generateContentOpf() (err error) {
 		spineArr = append(spineArr, `<itemref idref="titlepage"/>`)
 	}
 
-	if _, err := os.Stat(this.BasePath + "/summary.html"); err == nil {
-		spineArr = append(spineArr, `<itemref idref="summary"/>`) //目录
-
+	log.Println("type:",this.Config.Type)
+	if (this.Config.Type == "book") {
+		if _, err := os.Stat(this.BasePath + "/summary.html"); err == nil {
+			spineArr = append(spineArr, `<itemref idref="summary"/>`) //目录
+	
+		}
 	}
 
 	//扫描所有文件

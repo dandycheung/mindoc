@@ -26,3 +26,4 @@ _testmain.go
 /conf/app.conf
 /vendor
 /runtime
+mindoc

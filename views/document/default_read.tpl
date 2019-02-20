@@ -66,7 +66,7 @@
                 {{if .Model.IsDownload}}
                 <div class="dropdown pull-right" style="margin-right: 10px;">
                     <button type="button" class="btn btn-primary" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fa fa-cloud-download" aria-hidden="true"></i> 下载 <span class="caret"></span>
+                        <i class="fa fa-cloud-download" aria-hidden="true"></i> 全部下载 <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel" style="margin-top: -5px;">
                         <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "pdf"}}" target="_blank">PDF</a> </li>
@@ -78,6 +78,23 @@
                         {{end}}
                     </ul>
                 </div>
+
+
+                <div class="dropdown pull-right" style="margin-right: 10px;">
+                    <button type="button" class="btn btn-primary" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fa fa-cloud-download" aria-hidden="true"></i> 文档下载 <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel" style="margin-top: -5px;">
+                        <li><a href="javascript:exportDoc('pdf')" >PDF</a> </li>
+                        <li><a href="javascript:exportDoc('epub')" >EPUB</a> </li>
+                        <li><a href="javascript:exportDoc('mobi')" >MOBI</a> </li>
+                        <li><a href="javascript:exportDoc('docx')" >Word</a> </li>
+                        {{if eq .Model.Editor "markdown"}}
+                        <li><a href="javascript:exportDoc('markdown')" >Markdown</a> </li>
+                        {{end}}
+                    </ul>
+                </div>
+
                 {{end}}
             </div>
         </div>
@@ -142,6 +159,7 @@
                             </div>
                             <div class="col-md-8 text-center">
                                 <h1 id="article-title">{{.Title}}</h1>
+                                <h3 id="article-info">{{.Info}}</h3>
                             </div>
                             <div class="col-md-2">
                             </div>
@@ -291,6 +309,16 @@ $(function () {
         });
     });
 });
+
+function exportDoc(type)
+{
+    var currentLi =  $('li[aria-selected="true"]')[0]
+    var key = "{{ .Model.Identify }}";
+    var docId = $(currentLi).attr("id");
+    var docExportUrl = "/export/"+key+"/"+docId+"?output="+type;
+    window.open(docExportUrl);
+}
+
 </script>
 {{.Scripts}}
 </body>

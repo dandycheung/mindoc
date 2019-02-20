@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	_"log"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/astaxie/beego"
@@ -301,6 +302,17 @@ func (m *BookResult) Converter(sessionId string) (ConvertBookResult, error) {
 		return convertBookResult, err
 	}
 
+	for _, item := range docs {
+
+		docTempOutputName := "source"+strconv.Itoa(item.DocumentId)
+		docTempOutputPath := filepath.Join(sourceDir,docTempOutputName)
+
+		if err := os.MkdirAll(docTempOutputPath, 0766); err != nil {
+			beego.Error("创建目录失败 -> ", docTempOutputPath, err)
+		}
+		os.MkdirAll(filepath.Join(docTempOutputPath, "Images"), 0755)
+	}
+
 	tocList := make([]converter.Toc, 0)
 
 	for _, item := range docs {
@@ -349,6 +361,7 @@ func (m *BookResult) Converter(sessionId string) (ConvertBookResult, error) {
 		MarginBottom: "72",
 		Toc:          tocList,
 		More:         []string{},
+		Type:         "book",
 	}
 	if m.Publisher != "" {
 		ebookConfig.Footer = "<p style='color:#8E8E8E;font-size:12px;'>本文档由 <span style='text-decoration:none;color:#1abc9c;font-weight:bold;'>" + m.Publisher + "</span> 生成<span style='float:right'>- _PAGENUM_ -</span></p>"
@@ -365,11 +378,18 @@ func (m *BookResult) Converter(sessionId string) (ConvertBookResult, error) {
 	for _, item := range docs {
 		name := strconv.Itoa(item.DocumentId)
 		fpath := filepath.Join(tempOutputPath, name+".html")
+		docFpath := filepath.Join(tempOutputPath+name, name+".html")
 
 		f, err := os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0755)
 		if err != nil {
 			return convertBookResult, err
 		}
+
+		docF, err := os.OpenFile(docFpath, os.O_CREATE|os.O_RDWR, 0755)
+		if err != nil {
+			return convertBookResult, err
+		}
+
 		var buf bytes.Buffer
 
 		if err := beego.ExecuteViewPathTemplate(&buf, "document/export.tpl", viewPath, map[string]interface{}{"Model": m, "Lists": item, "BaseUrl": conf.BaseUrl}); err != nil {
@@ -380,6 +400,7 @@ func (m *BookResult) Converter(sessionId string) (ConvertBookResult, error) {
 		if err != nil {
 
 			f.Close()
+			docF.Close()
 			return convertBookResult, err
 		}
 
@@ -395,6 +416,11 @@ func (m *BookResult) Converter(sessionId string) (ConvertBookResult, error) {
 				if strings.HasPrefix(src, "/") {
 					spath := filepath.Join(conf.WorkingDirectory, src)
 					if filetil.CopyFile(spath, filepath.Join(tempOutputPath, dstSrcString)); err != nil {
+						beego.Error("复制图片失败 -> ", err, src)
+						return
+					}
+
+					if filetil.CopyFile(spath, filepath.Join(tempOutputPath+name, dstSrcString)); err != nil {
 						beego.Error("复制图片失败 -> ", err, src)
 						return
 					}
@@ -417,6 +443,11 @@ func (m *BookResult) Converter(sessionId string) (ConvertBookResult, error) {
 									beego.Error("下载图片失败 -> ", err, src)
 									return
 								}
+								if err := ioutil.WriteFile(filepath.Join(tempOutputPath+name, dstSrcString), body, 0755); err != nil {
+									beego.Error("下载图片失败 -> ", err, src)
+									return
+								}
+
 							} else {
 								beego.Error("下载图片失败 -> ", err, src)
 								return
@@ -441,7 +472,9 @@ func (m *BookResult) Converter(sessionId string) (ConvertBookResult, error) {
 			return convertBookResult, err
 		}
 		f.WriteString(html)
+		docF.WriteString(html)
 		f.Close()
+		docF.Close()
 	}
 
 	if err := filetil.CopyFile(filepath.Join(conf.WorkingDirectory, "static", "css", "kancloud.css"), filepath.Join(tempOutputPath, "styles", "css", "kancloud.css")); err != nil {
@@ -466,6 +499,36 @@ func (m *BookResult) Converter(sessionId string) (ConvertBookResult, error) {
 	}
 	if err := filetil.CopyFile(filepath.Join(conf.WorkingDirectory, "static", "editor.md", "lib", "mermaid", "mermaid.css"), filepath.Join(tempOutputPath, "styles", "css", "mermaid.css")); err != nil {
 		beego.Error("复制CSS样式出错 -> static/editor.md/lib/mermaid/mermaid.css", err)
+	}
+
+	for _, item := range docs {
+
+		name := strconv.Itoa(item.DocumentId)
+		docTempOutputPath := tempOutputPath+name
+
+		if err := filetil.CopyFile(filepath.Join(conf.WorkingDirectory, "static", "css", "kancloud.css"), filepath.Join(docTempOutputPath, "styles", "css", "kancloud.css")); err != nil {
+			beego.Error("复制CSS样式出错 -> static/css/kancloud.css", err)
+		}
+		if err := filetil.CopyFile(filepath.Join(conf.WorkingDirectory, "static", "css", "export.css"), filepath.Join(docTempOutputPath, "styles", "css", "export.css")); err != nil {
+			beego.Error("复制CSS样式出错 -> static/css/export.css", err)
+		}
+		if err := filetil.CopyFile(filepath.Join(conf.WorkingDirectory, "static", "editor.md", "css", "editormd.preview.css"), filepath.Join(docTempOutputPath, "styles", "editor.md", "css", "editormd.preview.css")); err != nil {
+			beego.Error("复制CSS样式出错 -> static/editor.md/css/editormd.preview.css", err)
+		}
+	
+		if err := filetil.CopyFile(filepath.Join(conf.WorkingDirectory, "static", "css", "markdown.preview.css"), filepath.Join(docTempOutputPath, "styles", "css", "markdown.preview.css")); err != nil {
+			beego.Error("复制CSS样式出错 -> static/css/markdown.preview.css", err)
+		}
+		if err := filetil.CopyFile(filepath.Join(conf.WorkingDirectory, "static", "editor.md", "lib", "highlight", "styles", "github.css"), filepath.Join(docTempOutputPath, "styles", "css", "github.css")); err != nil {
+			beego.Error("复制CSS样式出错 -> static/editor.md/lib/highlight/styles/github.css", err)
+		}
+	
+		if err := filetil.CopyDir(filepath.Join(conf.WorkingDirectory, "static", "font-awesome"), filepath.Join(docTempOutputPath, "styles", "font-awesome")); err != nil {
+			beego.Error("复制CSS样式出错 -> static/font-awesome", err)
+		}
+		if err := filetil.CopyFile(filepath.Join(conf.WorkingDirectory, "static", "editor.md", "lib", "mermaid", "mermaid.css"), filepath.Join(docTempOutputPath, "styles", "css", "mermaid.css")); err != nil {
+			beego.Error("复制CSS样式出错 -> static/editor.md/lib/mermaid/mermaid.css", err)
+		}
 	}
 
 	eBookConverter := &converter.Converter{
@@ -501,6 +564,47 @@ func (m *BookResult) Converter(sessionId string) (ConvertBookResult, error) {
 	convertBookResult.PDFPath = pdfpath
 	convertBookResult.EpubPath = epubpath
 	convertBookResult.WordPath = docxpath
+
+	for _, item := range docs {
+
+		name := strconv.Itoa(item.DocumentId)
+		docTempOutputPath := tempOutputPath+name
+		docPdfpath := filepath.Join(outputPath, name+".pdf")
+		docEpubpath := filepath.Join(outputPath, name+".epub")
+		docMobipath := filepath.Join(outputPath, name+".mobi")
+		docDocxpath := filepath.Join(outputPath, name+".docx")
+
+		ebookConfig.Type = "document"
+		eBookConverter := &converter.Converter{
+			BasePath:   docTempOutputPath,
+			OutputPath: filepath.Join(strings.TrimSuffix(tempOutputPath, "source"), "output"+name),
+			Config:     ebookConfig,
+			Debug:      true,
+			ProcessNum: conf.GetExportProcessNum(),
+		}
+	
+		os.MkdirAll(eBookConverter.OutputPath, 0766)
+	
+		if err := eBookConverter.Convert(); err != nil {
+			beego.Error("转换文件错误：" + item.DocumentName + " -> " + err.Error())
+			return convertBookResult, err
+		}
+		beego.Info("文档转换完成：" + item.DocumentName)
+	
+		if err := filetil.CopyFile(filepath.Join(eBookConverter.OutputPath, "output", "book.mobi"), docMobipath, ); err != nil {
+			beego.Error("复制文档失败 -> ", filepath.Join(eBookConverter.OutputPath, "output", name+".mobi"), err)
+		}
+		if err := filetil.CopyFile(filepath.Join(eBookConverter.OutputPath, "output", "book.pdf"), docPdfpath); err != nil {
+			beego.Error("复制文档失败 -> ", filepath.Join(eBookConverter.OutputPath, "output", name+".pdf"), err)
+		}
+		if err := filetil.CopyFile(filepath.Join(eBookConverter.OutputPath, "output", "book.epub"), docEpubpath); err != nil {
+			beego.Error("复制文档失败 -> ", filepath.Join(eBookConverter.OutputPath, "output", name+".epub"), err)
+		}
+		if err := filetil.CopyFile(filepath.Join(eBookConverter.OutputPath, "output", "book.docx"), docDocxpath); err != nil {
+			beego.Error("复制文档失败 -> ", filepath.Join(eBookConverter.OutputPath, "output", name+".docx"), err)
+		}
+	
+	}
 
 	return convertBookResult, nil
 }
@@ -601,10 +705,10 @@ func exportMarkdown(p string, parentId int, bookId int, baseDir string, bookUrl 
 					}
 				} else if strings.HasPrefix(imageUrl, "/") {
 					filetil.CopyFile(filepath.Join(conf.WorkingDirectory, imageUrl), filepath.Join(baseDir, imageUrl))
+					imageUrl = "."+imageUrl
 				}
 
 				imageUrl = strings.Replace(strings.TrimSuffix(image, originalImageUrl+")")+imageUrl+")", "\\", "/", -1)
-
 				return imageUrl
 			})
 
@@ -617,7 +721,11 @@ func exportMarkdown(p string, parentId int, bookId int, baseDir string, bookUrl 
 
 					//如果当前链接位于当前项目内
 					if strings.HasPrefix(originalLink, bookUrl) {
-						docIdentify := strings.TrimSpace(strings.TrimPrefix(originalLink, bookUrl))
+						//docIdentify := strings.TrimSpace(strings.TrimPrefix(originalLink, bookUrl))
+						docIdentifyString := strings.TrimSpace(strings.TrimSpace(strings.TrimPrefix(originalLink, bookUrl)))
+						docIdentifyStrings := strings.Split(docIdentifyString," ")
+						docIdentify := docIdentifyStrings[0]
+						
 						tempDoc := NewDocument()
 						if id, err := strconv.Atoi(docIdentify); err == nil && id > 0 {
 							err := o.QueryTable(NewDocument().TableNameWithPrefix()).Filter("document_id", id).One(tempDoc, "identify", "parent_id", "document_id")
@@ -632,7 +740,8 @@ func exportMarkdown(p string, parentId int, bookId int, baseDir string, bookUrl 
 								return link
 							}
 						}
-						tempLink := recursiveJoinDocumentIdentify(tempDoc.ParentId, "") + strings.TrimPrefix(originalLink, bookUrl)
+						//tempLink := recursiveJoinDocumentIdentify(tempDoc.ParentId, "") + strings.TrimPrefix(originalLink, bookUrl)
+						tempLink := recursiveJoinDocumentIdentify(tempDoc.ParentId, "") + docIdentify
 
 						if !strings.HasSuffix(tempLink, ".md") && !strings.HasSuffix(doc.Identify, ".markdown") {
 							tempLink = tempLink + ".md"

@@ -5,6 +5,9 @@ import (
 
 	"fmt"
 	"strconv"
+	_"log"
+	"regexp"
+	"io/ioutil"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -15,7 +18,11 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"bytes"
 	"strings"
+	"github.com/lifei6671/mindoc/utils/filetil"
 	"github.com/lifei6671/mindoc/utils"
+	"github.com/lifei6671/mindoc/utils/cryptil"
+	"github.com/lifei6671/mindoc/utils/requests"
+	"github.com/lifei6671/mindoc/utils/ziptil"
 )
 
 // Document struct.
@@ -333,4 +340,83 @@ func (item *Document) Processor() *Document {
 		}
 	}
 	return item
+}
+
+func (item *Document) ExportMarkdown(sessionId string) (string, error) {
+
+	documentId := strconv.Itoa(item.DocumentId)
+	bookId := strconv.Itoa(item.BookId)
+
+	outputPath := filepath.Join(conf.WorkingDirectory, "uploads", "documents", bookId , documentId+".zip")
+
+	os.MkdirAll(filepath.Dir(outputPath), 0644)
+
+	tempOutputPath := filepath.Join(os.TempDir(), sessionId, "markdown_doc_"+documentId)
+
+	var docPath string
+
+	if item.Identify != "" {
+		if strings.HasSuffix(item.Identify, ".md") || strings.HasSuffix(item.Identify, ".markdown") {
+			docPath = filepath.Join(tempOutputPath, item.Identify)
+		} else {
+			docPath = filepath.Join(tempOutputPath, item.Identify+".md")
+		}
+	} else {
+		docPath = filepath.Join(tempOutputPath, strings.TrimSpace(item.DocumentName)+".md")
+	}
+
+	dirPath := filepath.Dir(docPath)
+
+	os.MkdirAll(dirPath, 0766)
+	markdown := item.Markdown
+
+	if strings.TrimSpace(item.Markdown) != "" {
+
+		re := regexp.MustCompile(`!\[(.*?)\]\((.*?)\)`)
+
+		markdown = re.ReplaceAllStringFunc(item.Markdown, func(image string) string {
+			images := re.FindAllSubmatch([]byte(image), -1)
+			if len(images) <= 0 || len(images[0]) < 3 {
+				return image
+			}
+			originalImageUrl := string(images[0][2])
+			imageUrl := strings.Replace(string(originalImageUrl), "\\", "/", -1)
+
+			//如果是本地路径，则需要将图片复制到项目目录
+			if strings.HasPrefix(imageUrl, "http://") || strings.HasPrefix(imageUrl, "https://") {
+				imageExt := cryptil.Md5Crypt(imageUrl) + filepath.Ext(imageUrl)
+
+				dstFile := filepath.Join(tempOutputPath, "uploads", time.Now().Format("200601"), imageExt)
+
+				if err := requests.DownloadAndSaveFile(imageUrl, dstFile); err == nil {
+					imageUrl = strings.TrimPrefix(strings.Replace(dstFile, "\\", "/", -1), strings.Replace(tempOutputPath, "\\", "/", -1))
+					if !strings.HasPrefix(imageUrl, "/") && !strings.HasPrefix(imageUrl, "\\") {
+						imageUrl = "/" + imageUrl
+					}
+				}
+			} else if strings.HasPrefix(imageUrl, "/") {
+				filetil.CopyFile(filepath.Join(conf.WorkingDirectory, imageUrl), filepath.Join(tempOutputPath, imageUrl))
+				imageUrl = "."+imageUrl
+			}
+
+			imageUrl = strings.Replace(strings.TrimSuffix(image, originalImageUrl+")")+imageUrl+")", "\\", "/", -1)
+
+			return imageUrl
+		})
+
+	} else {
+		markdown = "# " + item.DocumentName + "\n"
+	}
+
+	if err := ioutil.WriteFile(docPath, []byte(markdown), 0644); err != nil {
+		beego.Error("导出Markdown失败->", err)
+		return outputPath, err
+	}
+
+	if err := ziptil.Compress(outputPath, tempOutputPath); err != nil {
+		beego.Error("导出Markdown失败->", err)
+		return "", err
+	}
+	return outputPath, nil
+
 }
