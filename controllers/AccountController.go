@@ -1,18 +1,18 @@
 package controllers
 
 import (
+	"html/template"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
-	"net/url"
 
-	"github.com/lifei6671/mindoc/mail"
 	"github.com/astaxie/beego"
 	"github.com/lifei6671/gocaptcha"
 	"github.com/lifei6671/mindoc/conf"
+	"github.com/lifei6671/mindoc/mail"
 	"github.com/lifei6671/mindoc/models"
 	"github.com/lifei6671/mindoc/utils"
-	"html/template"
 )
 
 // AccountController 用户登录与注册
@@ -31,7 +31,7 @@ func (c *AccountController) referer() string {
 func (c *AccountController) Prepare() {
 	c.BaseController.Prepare()
 	c.EnableXSRF = true
-	c.Data["xsrfdata"]=template.HTML(c.XSRFFormHTML())
+	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
 	if c.Ctx.Input.IsPost() {
 		token := c.Ctx.Input.Query("_xsrf")
 		if token == "" {
@@ -42,7 +42,7 @@ func (c *AccountController) Prepare() {
 		}
 		if token == "" {
 			if c.IsAjax() {
-				c.JsonResult(403,"非法请求")
+				c.JsonResult(403, "非法请求")
 			} else {
 				c.ShowErrorPage(403, "非法请求")
 			}
@@ -50,13 +50,14 @@ func (c *AccountController) Prepare() {
 		xsrfToken := c.XSRFToken()
 		if xsrfToken != token {
 			if c.IsAjax() {
-				c.JsonResult(403,"非法请求")
+				c.JsonResult(403, "非法请求")
 			} else {
 				c.ShowErrorPage(403, "非法请求")
 			}
 		}
 	}
 }
+
 // Login 用户登录
 func (c *AccountController) Login() {
 	c.Prepare()
@@ -106,7 +107,7 @@ func (c *AccountController) Login() {
 		member, err := models.NewMember().Login(account, password)
 		if err == nil {
 			member.LastLoginTime = time.Now()
-			member.Update()
+			_ = member.Update("last_login_time")
 
 			c.SetMember(*member)
 
@@ -168,10 +169,10 @@ func (c *AccountController) Register() {
 		captcha := c.GetString("code")
 
 		if ok, err := regexp.MatchString(conf.RegexpAccount, account); account == "" || !ok || err != nil {
-			c.JsonResult(6001, "账号只能由英文字母数字组成，且在3-50个字符")
+			c.JsonResult(6001, "账号只能由英文字母数字组成，且在 3-50 个字符")
 		}
 		if l := strings.Count(password1, ""); password1 == "" || l > 50 || l < 6 {
-			c.JsonResult(6002, "密码必须在6-50个字符之间")
+			c.JsonResult(6002, "密码必须在 6-50 个字符之间")
 		}
 		if password1 != password2 {
 			c.JsonResult(6003, "确认密码不正确")
@@ -196,7 +197,7 @@ func (c *AccountController) Register() {
 		member.Account = account
 		member.Password = password1
 		member.Role = conf.MemberGeneralRole
-		member.Avatar = conf.GetDefaultAvatar()
+		member.Avatar = conf.GetDefaultAvatar(account)
 		member.CreateAt = 0
 		member.Email = email
 		member.Status = 0
@@ -366,7 +367,7 @@ func (c *AccountController) ValidEmail() {
 		c.JsonResult(6001, "密码不能为空")
 	}
 	if l := strings.Count(password1, ""); l < 6 || l > 50 {
-		c.JsonResult(6001, "密码不能为空且必须在6-50个字符之间")
+		c.JsonResult(6001, "密码不能为空且必须在 6-50 个字符之间")
 	}
 	if password2 == "" {
 		c.JsonResult(6002, "确认密码不能为空")
@@ -421,7 +422,7 @@ func (c *AccountController) ValidEmail() {
 	c.JsonResult(0, "ok", conf.URLFor("AccountController.Login"))
 }
 
-// Logout 退出登录
+// 退出登录
 func (c *AccountController) Logout() {
 	c.SetMember(models.Member{})
 
