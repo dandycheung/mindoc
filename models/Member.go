@@ -2,9 +2,16 @@
 package models
 
 import (
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,31 +26,31 @@ import (
 )
 
 type Member struct {
-	MemberId int    `orm:"pk;auto;unique;column(member_id)" json:"member_id"`
-	Account  string `orm:"size(100);unique;column(account)" json:"account"`
-	RealName string `orm:"size(255);column(real_name)" json:"real_name"`
-	Password string `orm:"size(1000);column(password)" json:"-"`
-	//认证方式: local 本地数据库 /ldap LDAP
-	AuthMethod  string `orm:"column(auth_method);default(local);size(50);" json:"auth_method"`
-	Description string `orm:"column(description);size(2000)" json:"description"`
-	Email       string `orm:"size(100);column(email);unique" json:"email"`
-	Phone       string `orm:"size(255);column(phone);null;default(null)" json:"phone"`
-	Avatar      string `orm:"size(1000);column(avatar)" json:"avatar"`
-	//用户角色：0 超级管理员 /1 管理员/ 2 普通用户 .
+	MemberId      int             `orm:"pk;auto;unique;column(member_id)" json:"member_id"`
+	Account       string          `orm:"size(100);unique;column(account)" json:"account"`
+	RealName      string          `orm:"size(255);column(real_name)" json:"real_name"`
+	Password      string          `orm:"size(1000);column(password)" json:"-"`
+	// 认证方式: local 本地数据库 /ldap LDAP
+	AuthMethod    string          `orm:"column(auth_method);default(local);size(50);" json:"auth_method"`
+	Description   string          `orm:"column(description);size(2000)" json:"description"`
+	Email         string          `orm:"size(100);column(email);unique" json:"email"`
+	Phone         string          `orm:"size(255);column(phone);null;default(null)" json:"phone"`
+	Avatar        string          `orm:"size(1000);column(avatar)" json:"avatar"`
+	// 用户角色：0 超级管理员 /1 管理员/ 2 普通用户
 	Role          conf.SystemRole `orm:"column(role);type(int);default(1);index" json:"role"`
 	RoleName      string          `orm:"-" json:"role_name"`
-	Status        int             `orm:"column(status);type(int);default(0)" json:"status"` //用户状态：0 正常/1 禁用
+	Status        int             `orm:"column(status);type(int);default(0)" json:"status"` // 用户状态：0 正常/1 禁用
 	CreateTime    time.Time       `orm:"type(datetime);column(create_time);auto_now_add" json:"create_time"`
 	CreateAt      int             `orm:"type(int);column(create_at)" json:"create_at"`
 	LastLoginTime time.Time       `orm:"type(datetime);column(last_login_time);null" json:"last_login_time"`
 }
 
-// TableName 获取对应数据库表名.
+// 获取对应数据库表名
 func (m *Member) TableName() string {
 	return "members"
 }
 
-// TableEngine 获取数据使用的引擎.
+// 获取数据使用的引擎
 func (m *Member) TableEngine() string {
 	return "INNODB"
 }
@@ -56,7 +63,7 @@ func NewMember() *Member {
 	return &Member{}
 }
 
-// Login 用户登录.
+// 用户登录
 func (m *Member) Login(account string, password string) (*Member, error) {
 	o := orm.NewOrm()
 
@@ -67,8 +74,11 @@ func (m *Member) Login(account string, password string) (*Member, error) {
 
 	if err != nil {
 		if beego.AppConfig.DefaultBool("ldap_enable", false) == true {
-			logs.Info("转入LDAP登陆")
+			logs.Info("转入 LDAP 登录")
 			return member.ldapLogin(account, password)
+		} else if beego.AppConfig.String("http_login_url") != "" {
+			logs.Info("转入 HTTP 接口登录 ->", account)
+			return member.httpLogin(account, password)
 		} else {
 			logs.Error("用户登录 ->", err)
 			return member, ErrMemberNoExist
@@ -85,6 +95,8 @@ func (m *Member) Login(account string, password string) (*Member, error) {
 		}
 	case "ldap":
 		return member.ldapLogin(account, password)
+	case "http":
+		return member.httpLogin(account, password)
 	default:
 		return member, ErrMemberAuthMethodInvalid
 	}
@@ -92,11 +104,12 @@ func (m *Member) Login(account string, password string) (*Member, error) {
 	return member, ErrorMemberPasswordError
 }
 
-//ldapLogin 通过LDAP登陆
+// 通过 LDAP 登录
 func (m *Member) ldapLogin(account string, password string) (*Member, error) {
 	if beego.AppConfig.DefaultBool("ldap_enable", false) == false {
 		return m, ErrMemberAuthMethodInvalid
 	}
+
 	var err error
 	lc, err := ldap.Dial("tcp", fmt.Sprintf("%s:%d", beego.AppConfig.String("ldap_host"), beego.AppConfig.DefaultInt("ldap_port", 3268)))
 	if err != nil {
@@ -104,36 +117,51 @@ func (m *Member) ldapLogin(account string, password string) (*Member, error) {
 		return m, ErrLDAPConnect
 	}
 	defer lc.Close()
+
 	err = lc.Bind(beego.AppConfig.String("ldap_user"), beego.AppConfig.String("ldap_password"))
 	if err != nil {
 		beego.Error("绑定 LDAP 用户失败 ->", err)
 		return m, ErrLDAPFirstBind
 	}
+
 	searchRequest := ldap.NewSearchRequest(
 		beego.AppConfig.String("ldap_base"),
 		ldap.ScopeWholeSubtree, ldap.NeverDerefAliases, 0, 0, false,
-		//修改objectClass通过配置文件获取值
+
+		// 修改 objectClass 通过配置文件获取值
 		fmt.Sprintf("(&(%s)(%s=%s))", beego.AppConfig.String("ldap_filter"), beego.AppConfig.String("ldap_attribute"), account),
 		[]string{"dn", "mail"},
 		nil,
 	)
+
 	searchResult, err := lc.Search(searchRequest)
 	if err != nil {
 		beego.Error("绑定 LDAP 用户失败 ->", err)
 		return m, ErrLDAPSearch
 	}
+
 	if len(searchResult.Entries) != 1 {
 		return m, ErrLDAPUserNotFoundOrTooMany
 	}
+
 	userdn := searchResult.Entries[0].DN
 	err = lc.Bind(userdn, password)
 	if err != nil {
 		beego.Error("绑定 LDAP 用户失败 ->", err)
 		return m, ErrorMemberPasswordError
 	}
-	if m.Account == "" {
+
+	if m.MemberId <= 0 {
+		email := searchResult.Entries[0].GetAttributeValue("mail")
+		if email == "" {
+			mailDomain := beego.AppConfig.DefaultString("ldap_mail_domain", "")
+			if mailDomain != "" {
+				email = account + "@" + mailDomain
+			}
+		}
+
 		m.Account = account
-		m.Email = searchResult.Entries[0].GetAttributeValue("mail")
+		m.Email = email
 		m.AuthMethod = "ldap"
 		m.Avatar = "/static/images/headimgurl.jpg"
 		m.Role = conf.SystemRole(beego.AppConfig.DefaultInt("ldap_user_role", 2))
@@ -141,20 +169,106 @@ func (m *Member) ldapLogin(account string, password string) (*Member, error) {
 
 		err = m.Add()
 		if err != nil {
-			beego.Error("自动注册LDAP用户错误", err)
+			beego.Error("自动注册 LDAP 用户错误", err)
 			return m, ErrorMemberPasswordError
 		}
+
 		m.ResolveRoleName()
 	}
+
 	return m, nil
 }
 
-// Add 添加一个用户.
+func (m *Member) httpLogin(account, password string) (*Member, error) {
+	urlStr := beego.AppConfig.String("http_login_url")
+	if urlStr == "" {
+		return nil, ErrMemberAuthMethodInvalid
+	}
+
+	val := url.Values{
+		"account":  []string{account},
+		"password": []string{password},
+		"time":     []string{strconv.FormatInt(time.Now().Unix(), 10)},
+	}
+
+	h := md5.New()
+	h.Write([]byte(val.Encode() + beego.AppConfig.DefaultString("http_login_secret", "")))
+
+	val.Add("sn", hex.EncodeToString(h.Sum(nil)))
+
+	resp, err := http.PostForm(urlStr, val)
+	if err != nil {
+		beego.Error("通过接口登录失败 -> ", urlStr, account, err)
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		beego.Error("读取接口返回值失败 -> ", urlStr, account, err)
+		return nil, err
+	}
+
+	beego.Info("HTTP 登录接口返回数据 ->", string(body))
+
+	var result map[string]interface{}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		beego.Error("解析接口返回值失败 -> ", urlStr, account, string(body))
+		return nil, errors.New("解析接口返回值失败")
+	}
+
+	if code, ok := result["errcode"]; !ok || code.(float64) != 200 {
+		if msg, ok := result["message"]; ok {
+			return nil, errors.New(msg.(string))
+		}
+		return nil, errors.New("接口返回值格式不正确")
+	}
+
+	if m.MemberId <= 0 {
+		member := NewMember()
+
+		if email, ok := result["email"]; !ok || email == "" {
+			return nil, errors.New("接口返回的数据缺少邮箱字段")
+		} else {
+			member.Email = email.(string)
+		}
+
+		if avatar, ok := result["avater"]; ok && avatar != "" {
+			member.Avatar = avatar.(string)
+		} else {
+			member.Avatar = conf.URLForWithCdnImage("/static/images/headimgurl.jpg")
+		}
+
+		if realName, ok := result["real_name"]; ok && realName != "" {
+			member.RealName = realName.(string)
+		}
+
+		member.Account = account
+		member.Password = password
+		member.AuthMethod = "http"
+		member.Role = conf.SystemRole(beego.AppConfig.DefaultInt("ldap_user_role", 2))
+		member.CreateTime = time.Now()
+
+		if err := member.Add(); err != nil {
+			beego.Error("自动注册用户错误", err)
+			return m, ErrorMemberPasswordError
+		}
+
+		member.ResolveRoleName()
+		*m = *member
+	}
+
+	return m, nil
+}
+
+// 添加一个用户
 func (m *Member) Add() error {
 	o := orm.NewOrm()
 
 	if ok, err := regexp.MatchString(conf.RegexpAccount, m.Account); m.Account == "" || !ok || err != nil {
-		return errors.New("账号只能由英文字母数字组成，且在3-50个字符")
+		return errors.New("账号只能由英文字母数字组成，且在 3-50 个字符")
 	}
 	if m.Email == "" {
 		return errors.New("邮箱不能为空")
@@ -164,7 +278,7 @@ func (m *Member) Add() error {
 	}
 	if m.AuthMethod == "local" {
 		if l := strings.Count(m.Password, ""); l < 6 || l >= 50 {
-			return errors.New("密码不能为空且必须在6-50个字符之间")
+			return errors.New("密码不能为空且必须在 6-50 个字符之间")
 		}
 	}
 	if c, err := o.QueryTable(m.TableNameWithPrefix()).Filter("email", m.Email).Count(); err == nil && c > 0 {
@@ -192,7 +306,7 @@ func (m *Member) Add() error {
 	return nil
 }
 
-// Update 更新用户信息.
+// 更新用户信息
 func (m *Member) Update(cols ...string) error {
 	o := orm.NewOrm()
 
@@ -203,7 +317,7 @@ func (m *Member) Update(cols ...string) error {
 		return errors.New("邮箱已被使用")
 	}
 	if _, err := o.Update(m, cols...); err != nil {
-		beego.Error("保存用户信息失败=>", err)
+		beego.Error("保存用户信息失败 =>", err)
 		return errors.New("保存用户信息失败")
 	}
 	return nil
@@ -219,7 +333,6 @@ func (m *Member) Find(id int, cols ...string) (*Member, error) {
 	return m, nil
 }
 
-
 func (m *Member) ResolveRoleName() {
 	if m.Role == conf.MemberSuperRole {
 		m.RoleName = "超级管理员"
@@ -230,34 +343,34 @@ func (m *Member) ResolveRoleName() {
 	}
 }
 
-//根据账号查找用户.
+// 根据账号查找用户
 func (m *Member) FindByAccount(account string) (*Member, error) {
 	o := orm.NewOrm()
 
 	err := o.QueryTable(m.TableNameWithPrefix()).Filter("account", account).One(m)
-
 	if err == nil {
 		m.ResolveRoleName()
 	}
+
 	return m, err
 }
 
-//批量查询用户
+// 批量查询用户
 func (m *Member) FindByAccountList(accounts ...string) ([]*Member, error) {
 	o := orm.NewOrm()
 
 	var members []*Member
 	_, err := o.QueryTable(m.TableNameWithPrefix()).Filter("account__in", accounts).All(&members)
-
 	if err == nil {
 		for _, item := range members {
 			item.ResolveRoleName()
 		}
 	}
+
 	return members, err
 }
 
-//分页查找用户.
+// 分页查找用户
 func (m *Member) FindToPager(pageIndex, pageSize int) ([]*Member, int, error) {
 	o := orm.NewOrm()
 
@@ -266,13 +379,11 @@ func (m *Member) FindToPager(pageIndex, pageSize int) ([]*Member, int, error) {
 	offset := (pageIndex - 1) * pageSize
 
 	totalCount, err := o.QueryTable(m.TableNameWithPrefix()).Count()
-
 	if err != nil {
 		return members, 0, err
 	}
 
 	_, err = o.QueryTable(m.TableNameWithPrefix()).OrderBy("-member_id").Offset(offset).Limit(pageSize).All(&members)
-
 	if err != nil {
 		return members, 0, err
 	}
@@ -280,17 +391,18 @@ func (m *Member) FindToPager(pageIndex, pageSize int) ([]*Member, int, error) {
 	for _, m := range members {
 		m.ResolveRoleName()
 	}
+
 	return members, int(totalCount), nil
 }
 
-func (c *Member) IsAdministrator() bool {
-	if c == nil || c.MemberId <= 0 {
+func (m *Member) IsAdministrator() bool {
+	if m == nil || m.MemberId <= 0 {
 		return false
 	}
-	return c.Role == 0 || c.Role == 1
+	return m.Role == 0 || m.Role == 1
 }
 
-//根据指定字段查找用户.
+// 根据指定字段查找用户
 func (m *Member) FindByFieldFirst(field string, value interface{}) (*Member, error) {
 	o := orm.NewOrm()
 
@@ -299,14 +411,14 @@ func (m *Member) FindByFieldFirst(field string, value interface{}) (*Member, err
 	return m, err
 }
 
-//校验用户.
+// 校验用户
 func (m *Member) Valid(is_hash_password bool) error {
 
-	//邮箱不能为空
+	// 邮箱不能为空
 	if m.Email == "" {
 		return ErrMemberEmailEmpty
 	}
-	//用户描述必须小于500字
+	// 用户描述必须小于 500 字
 	if strings.Count(m.Description, "") > 500 {
 		return ErrMemberDescriptionTooLong
 	}
@@ -316,17 +428,17 @@ func (m *Member) Valid(is_hash_password bool) error {
 	if m.Status != 0 && m.Status != 1 {
 		m.Status = 0
 	}
-	//邮箱格式校验
+	// 邮箱格式校验
 	if ok, err := regexp.MatchString(conf.RegexpEmail, m.Email); !ok || err != nil || m.Email == "" {
 		return ErrMemberEmailFormatError
 	}
-	//如果是未加密密码，需要校验密码格式
+	// 如果是未加密密码，需要校验密码格式
 	if !is_hash_password {
 		if l := strings.Count(m.Password, ""); m.Password == "" || l > 50 || l < 6 {
 			return ErrMemberPasswordFormatError
 		}
 	}
-	//校验邮箱是否呗使用
+	// 校验邮箱是否被使用
 	if member, err := NewMember().FindByFieldFirst("email", m.Account); err == nil && member.MemberId > 0 {
 		if m.MemberId > 0 && m.MemberId != member.MemberId {
 			return ErrMemberEmailExist
@@ -337,16 +449,16 @@ func (m *Member) Valid(is_hash_password bool) error {
 	}
 
 	if m.MemberId > 0 {
-		//校验用户是否存在
+		// 校验用户是否存在
 		if _, err := NewMember().Find(m.MemberId); err != nil {
 			return err
 		}
 	} else {
-		//校验账号格式是否正确
+		// 校验账号格式是否正确
 		if ok, err := regexp.MatchString(conf.RegexpAccount, m.Account); m.Account == "" || !ok || err != nil {
 			return ErrMemberAccountFormatError
 		}
-		//校验账号是否被使用
+		// 校验账号是否被使用
 		if member, err := NewMember().FindByAccount(m.Account); err == nil && member.MemberId > 0 {
 			return ErrMemberExist
 		}
@@ -355,7 +467,7 @@ func (m *Member) Valid(is_hash_password bool) error {
 	return nil
 }
 
-//删除一个用户.
+// 删除一个用户
 func (m *Member) Delete(oldId int, newId int) error {
 	o := orm.NewOrm()
 
@@ -425,14 +537,14 @@ func (m *Member) Delete(oldId int, newId int) error {
 		o.Rollback()
 		return err
 	}
-	_,err = o.QueryTable(NewTeamMember()).Filter("member_id",oldId).Delete()
 
+	_, err = o.QueryTable(NewTeamMember()).Filter("member_id", oldId).Delete()
 	if err != nil {
 		o.Rollback()
 		return err
 	}
 
-	//_,err = o.Raw("UPDATE md_relationship SET member_id = ? WHERE member_id = ?",newId,oldId).Exec()
+	//_, err = o.Raw("UPDATE md_relationship SET member_id = ? WHERE member_id = ?", newId, oldId).Exec()
 	//if err != nil {
 	//
 	//	if err != nil {
@@ -440,13 +552,13 @@ func (m *Member) Delete(oldId int, newId int) error {
 	//		return err
 	//	}
 	//}
+
 	var relationshipList []*Relationship
 
 	_, err = o.QueryTable(NewRelationship().TableNameWithPrefix()).Filter("member_id", oldId).Limit(math.MaxInt32).All(&relationshipList)
-
 	if err == nil {
 		for _, relationship := range relationshipList {
-			//如果存在创始人，则删除
+			// 如果存在创始人，则删除
 			if relationship.RoleId == 0 {
 				rel := NewRelationship()
 
@@ -457,6 +569,7 @@ func (m *Member) Delete(oldId int, newId int) error {
 					}
 					relationship.RelationshipId = rel.RelationshipId
 				}
+
 				relationship.MemberId = newId
 				relationship.RoleId = 0
 				if _, err := o.Update(relationship); err != nil {
@@ -474,5 +587,6 @@ func (m *Member) Delete(oldId int, newId int) error {
 		o.Rollback()
 		return err
 	}
+
 	return nil
 }
