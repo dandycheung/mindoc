@@ -56,7 +56,7 @@
 <div class="m-manual manual-editor">
     <div class="manual-head" id="editormd-tools" style="min-width: 1200px; position:absolute;">
         <div class="editormd-group">
-            <a href="{{urlfor "BookController.Index"}}" data-toggle="tooltip" data-title="返回"><i class="fa fa-chevron-left" aria-hidden="true"></i></a>
+            <a id="backButton" href="{{urlfor "BookController.Index"}}" data-toggle="tooltip" data-title="返回"><i class="fa fa-chevron-left" aria-hidden="true"></i></a>
         </div>
         <div class="editormd-group">
             <a href="javascript:;" id="markdown-save" data-toggle="tooltip" data-title="保存" class="disabled save"><i class="fa fa-save first" aria-hidden="true" name="save"></i></a>
@@ -94,7 +94,7 @@
             <a href="javascript:;" data-toggle="tooltip" data-title="引用"><i class="fa fa-quote-right item" name="quote" unselectable="on"></i></a>
             <a href="javascript:;" data-toggle="tooltip" data-title="GFM 任务列表"><i class="fa fa-tasks item" name="tasks" aria-hidden="true"></i></a>
             <a href="javascript:;" data-toggle="tooltip" data-title="附件"><i class="fa fa-paperclip item" aria-hidden="true" name="attachment"></i></a>
-            <a href="javascript:;" data-toggle="tooltip" data-title="Json转换为表格"><i class="fa fa-wrench item" aria-hidden="true" name="json"></i></a>
+            <a href="javascript:;" data-toggle="tooltip" data-title="Json 转换为表格"><i class="fa fa-wrench item" aria-hidden="true" name="json"></i></a>
             <a href="javascript:;" data-toggle="tooltip" data-title="模板"><i class="fa fa-tachometer last" name="template"></i></a>
 
         </div>
@@ -167,17 +167,21 @@
 
                 </div>
                 <div class="form-group">
-                        <div class="col-lg-6">
+                        <div class="col-lg-4">
                             <label>
-                                <input type="radio" name="is_open" value="1"> 展开<span class="text">(在阅读时会自动展开节点)</span>
+                                <input type="radio" name="is_open" value="1"> 展开<span class="text">（在阅读时会自动展开节点）</span>
                             </label>
                         </div>
-                        <div class="col-lg-6">
+                        <div class="col-lg-4">
                             <label>
-                                <input type="radio" name="is_open" value="0" checked> 关闭<span class="text">(在阅读时会关闭节点)</span>
+                                <input type="radio" name="is_open" value="0" checked> 关闭<span class="text">（在阅读时会关闭节点）</span>
                             </label>
                         </div>
-
+                    <div class="col-lg-4">
+                        <label>
+                            <input type="radio" name="is_open" value="2"> 空目录<span class="text">（单击时会展开下级节点）</span>
+                        </label>
+                    </div>
                     <div class="clearfix"></div>
                 </div>
             </div>
@@ -508,6 +512,17 @@
             }
         });
     });
+
+    setTimeout("changeBackHref()", 500);
+    function changeBackHref()
+    {
+        if (window.selectNode) {
+            var backHref= '/docs/{{.Model.Identify}}/' + window.selectNode.identify;
+            $("#backButton").attr('href', backHref);
+        } else {
+            setTimeout("changeBackHref()", 500);  
+        }
+    }
 </script>
 </body>
 </html>
