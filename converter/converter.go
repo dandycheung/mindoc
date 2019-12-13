@@ -1,25 +1,24 @@
-//Author:TruthHun
-//Email:TruthHun@QQ.COM
-//Date:2018-01-21
+// Author: TruthHun
+// Email:  TruthHun@QQ.COM
+// Date:   2018-01-21
 package converter
 
 import (
+	"errors"
 	"fmt"
+	"html"
 	"io/ioutil"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
-	"log"
-
+	"sync"
 	"time"
-	"os/exec"
-	"errors"
 
 	"github.com/lifei6671/mindoc/utils/filetil"
 	"github.com/lifei6671/mindoc/utils/ziptil"
 	"github.com/lifei6671/mindoc/utils/cryptil"
-	"sync"
-	"html"
 )
 
 type Converter struct {
@@ -28,12 +27,12 @@ type Converter struct {
 	Config         Config
 	Debug          bool
 	GeneratedCover string
-	ProcessNum	 	int		//并发的任务数量
-	process 	chan func()
-	limitChan		chan bool
+	ProcessNum     int         // 并发的任务数量
+	process        chan func()
+	limitChan      chan bool
 }
 
-//目录结构
+// 目录结构
 type Toc struct {
 	Id    int    `json:"id"`
 	Link  string `json:"link"`
@@ -41,36 +40,36 @@ type Toc struct {
 	Title string `json:"title"`
 }
 
-//config.json文件解析结构
+// config.json 文件解析结构
 type Config struct {
-	Charset      string   `json:"charset"`       //字符编码，默认utf-8编码
-	Cover        string   `json:"cover"`         //封面图片，或者封面html文件
-	Timestamp    string   `json:"date"`          //时间日期,如“2018-01-01 12:12:21”，其实是time.Time格式，但是直接用string就好
-	Description  string   `json:"description"`   //摘要
-	Footer       string   `json:"footer"`        //pdf的footer
-	Header       string   `json:"header"`        //pdf的header
-	Identifier   string   `json:"identifier"`    //即uuid，留空即可
-	Language     string   `json:"language"`      //语言，如zh、en、zh-CN、en-US等
-	Creator      string   `json:"creator"`       //作者，即author
-	Publisher    string   `json:"publisher"`     //出版单位
-	Contributor  string   `json:"contributor"`   //同Publisher
-	Title        string   `json:"title"`         //文档标题
-	Format       []string `json:"format"`        //导出格式，可选值：pdf、epub、mobi
-	FontSize     string   `json:"font_size"`     //默认的pdf导出字体大小
-	PaperSize    string   `json:"paper_size"`    //页面大小
-	MarginLeft   string   `json:"margin_left"`   //PDF文档左边距，写数字即可，默认72pt
-	MarginRight  string   `json:"margin_right"`  //PDF文档左边距，写数字即可，默认72pt
-	MarginTop    string   `json:"margin_top"`    //PDF文档左边距，写数字即可，默认72pt
-	MarginBottom string   `json:"margin_bottom"` //PDF文档左边距，写数字即可，默认72pt
-	More         []string `json:"more"`          //更多导出选项[PDF导出选项，具体参考：https://manual.calibre-ebook.com/generated/en/ebook-convert.html#pdf-output-options]
-	Toc          []Toc    `json:"toc"`           //目录
-	Type         string   `json:"type"`           //目录
+	Charset      string   `json:"charset"`       // 字符编码，默认 UTF-8 编码
+	Cover        string   `json:"cover"`         // 封面图片，或者封面 HTML 文件
+	Timestamp    string   `json:"date"`          // 时间日期，如“2018-01-01 12:12:21”，其实是 time.Time 格式，但是直接用 string 就好
+	Description  string   `json:"description"`   // 摘要
+	Footer       string   `json:"footer"`        // PDF 的 footer
+	Header       string   `json:"header"`        // PDF的 header
+	Identifier   string   `json:"identifier"`    // 即 uuid，留空即可
+	Language     string   `json:"language"`      // 语言，如 zh、en、zh-CN、en-US 等
+	Creator      string   `json:"creator"`       // 作者，即 Author
+	Publisher    string   `json:"publisher"`     // 出版单位
+	Contributor  string   `json:"contributor"`   // 同 Publisher
+	Title        string   `json:"title"`         // 文档标题
+	Format       []string `json:"format"`        // 导出格式，可选值：pdf、epub、mobi
+	FontSize     string   `json:"font_size"`     // 默认的 PDF 导出字体大小
+	PaperSize    string   `json:"paper_size"`    // 页面大小
+	MarginLeft   string   `json:"margin_left"`   // PDF 文档左边距，写数字即可，默认 72pt
+	MarginRight  string   `json:"margin_right"`  // PDF 文档左边距，写数字即可，默认 72pt
+	MarginTop    string   `json:"margin_top"`    // PDF 文档左边距，写数字即可，默认 72pt
+	MarginBottom string   `json:"margin_bottom"` // PDF 文档左边距，写数字即可，默认 72pt
+	More         []string `json:"more"`          // 更多导出选项[PDF 导出选项，具体参考：https://manual.calibre-ebook.com/generated/en/ebook-convert.html#pdf-output-options]
+	Toc          []Toc    `json:"toc"`           // 目录
+	Type         string   `json:"type"`          // 范围类型
 	///////////////////////////////////////////
-	Order []string `json:"-"` //这个不需要赋值
+	Order []string `json:"-"` // 这个不需要赋值
 }
 
 var (
-	output       = "output" //文档导出文件夹
+	output       = "output" // 文档导出文件夹
 	ebookConvert = "ebook-convert"
 )
 
@@ -82,53 +81,60 @@ func CheckConvertCommand() error {
 }
 
 // 接口文档 https://manual.calibre-ebook.com/generated/en/ebook-convert.html#table-of-contents
-//根据json配置文件，创建文档转化对象
+// 根据 json 配置文件，创建文档转化对象
 func NewConverter(configFile string, debug ...bool) (converter *Converter, err error) {
 	var (
 		cfg      Config
 		basepath string
 		db       bool
 	)
+
 	if len(debug) > 0 {
 		db = debug[0]
 	}
 
 	if cfg, err = parseConfig(configFile); err == nil {
 		if basepath, err = filepath.Abs(filepath.Dir(configFile)); err == nil {
-			//设置默认值
+			// 设置默认值
 			if len(cfg.Timestamp) == 0 {
 				cfg.Timestamp = time.Now().Format("2006-01-02 15:04:05")
 			}
+
 			if len(cfg.Charset) == 0 {
 				cfg.Charset = "utf-8"
 			}
+
 			converter = &Converter{
-				Config:   cfg,
-				BasePath: basepath,
-				Debug:    db,
+				Config:     cfg,
+				BasePath:   basepath,
+				Debug:      db,
 				ProcessNum: 1,
-				process: make(chan func(),4),
-				limitChan: make(chan bool,1),
+				process:    make(chan func(), 4),
+				limitChan:  make(chan bool, 1),
 			}
 		}
 	}
+
 	return
 }
 
-//执行文档转换
+// 执行文档转换
 func (convert *Converter) Convert() (err error) {
-	if !convert.Debug { //调试模式下不删除生成的文件
-		defer convert.converterDefer() //最后移除创建的多余而文件
+	if !convert.Debug { // 调试模式下不删除生成的文件
+		defer convert.converterDefer() // 最后移除创建的多余而文件
 	}
-	if convert.process == nil{
-		convert.process = make(chan func(),4)
+
+	if convert.process == nil {
+		convert.process = make(chan func(), 4)
 	}
+
 	if convert.limitChan == nil {
 		if convert.ProcessNum <= 0 {
 			convert.ProcessNum = 1
 		}
-		convert.limitChan = make(chan bool,convert.ProcessNum)
-		for i := 0; i < convert.ProcessNum;i++{
+
+		convert.limitChan = make(chan bool, convert.ProcessNum)
+		for i := 0; i < convert.ProcessNum; i++ {
 			convert.limitChan <- true
 		}
 	}
@@ -136,28 +142,34 @@ func (convert *Converter) Convert() (err error) {
 	if err = convert.generateMimeType(); err != nil {
 		return
 	}
+
 	if err = convert.generateMetaInfo(); err != nil {
 		return
 	}
-	if err = convert.generateTocNcx(); err != nil { //生成目录
-		return
-	}
-	if err = convert.generateSummary(); err != nil { //生成文档内目录
-		return
-	}
-	if err = convert.generateTitlePage(); err != nil { //生成封面
-		return
-	}
-	if err = convert.generateContentOpf(); err != nil { //这个必须是generate*系列方法的最后一个调用
+
+	if err = convert.generateTocNcx(); err != nil {    // 生成目录
 		return
 	}
 
-	//将当前文件夹下的所有文件压缩成zip包，然后直接改名成content.epub
+	if err = convert.generateSummary(); err != nil {   // 生成文档内目录
+		return
+	}
+
+	if err = convert.generateTitlePage(); err != nil { // 生成封面
+		return
+	}
+
+	if err = convert.generateContentOpf(); err != nil { // 这个必须是 generate* 系列方法的最后一个调用
+		return
+	}
+
+	// 将当前文件夹下的所有文件压缩成 zip 包，然后直接改名成 content.epub
 	f := filepath.Join(convert.OutputPath, "content.epub")
-	os.Remove(f) //如果原文件存在了，则删除;
-	if err = ziptil.Zip(convert.BasePath,f); err == nil {
-		//创建导出文件夹
-		os.Mkdir(convert.BasePath+"/"+output, os.ModePerm)
+	os.Remove(f) // 如果原文件存在了，则删除
+
+	if err = ziptil.Zip(convert.BasePath, f); err == nil {
+		// 创建导出文件夹
+		os.Mkdir(convert.BasePath + "/" + output, os.ModePerm)
 		if len(convert.Config.Format) > 0 {
 			var errs []string
 
@@ -205,6 +217,7 @@ func (convert *Converter) Convert() (err error) {
 				if action == nil && !isClosed {
 					break;
 				}
+
 				group.Add(1)
 				<- convert.limitChan
 				go func(group *sync.WaitGroup) {
@@ -231,19 +244,19 @@ func (convert *Converter) Convert() (err error) {
 	return
 }
 
-//删除生成导出文档而创建的文件
+// 删除生成导出文档而创建的文件
 func (this *Converter) converterDefer() {
-	//删除不必要的文件
+	// 删除不必要的文件
 	os.RemoveAll(filepath.Join(this.BasePath, "META-INF"))
 	os.RemoveAll(filepath.Join(this.BasePath, "content.epub"))
 	os.RemoveAll(filepath.Join(this.BasePath, "mimetype"))
 	os.RemoveAll(filepath.Join(this.BasePath, "toc.ncx"))
 	os.RemoveAll(filepath.Join(this.BasePath, "content.opf"))
-	os.RemoveAll(filepath.Join(this.BasePath, "titlepage.xhtml")) //封面图片待优化
-	os.RemoveAll(filepath.Join(this.BasePath, "summary.html"))    //文档目录
+	os.RemoveAll(filepath.Join(this.BasePath, "titlepage.xhtml")) // 封面图片待优化
+	os.RemoveAll(filepath.Join(this.BasePath, "summary.html"))    // 文档目录
 }
 
-//生成metainfo
+// 生成 metainfo
 func (this *Converter) generateMetaInfo() (err error) {
 	xml := `<?xml version="1.0"?>
 			<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
@@ -255,15 +268,16 @@ func (this *Converter) generateMetaInfo() (err error) {
 	folder := filepath.Join(this.BasePath, "META-INF")
 	os.MkdirAll(folder, os.ModePerm)
 	err = ioutil.WriteFile(filepath.Join(folder, "container.xml"), []byte(xml), os.ModePerm)
+
 	return
 }
 
-//形成mimetyppe
+// 形成 mimetyppe
 func (this *Converter) generateMimeType() (err error) {
 	return ioutil.WriteFile(filepath.Join(this.BasePath, "mimetype"), []byte("application/epub+zip"), os.ModePerm)
 }
 
-//生成封面
+// 生成封面
 func (this *Converter) generateTitlePage() (err error) {
 	if ext := strings.ToLower(filepath.Ext(this.Config.Cover)); !(ext == ".html" || ext == ".xhtml") {
 		xml := `<?xml version='1.0' encoding='` + this.Config.Charset + `'?>
@@ -290,10 +304,11 @@ func (this *Converter) generateTitlePage() (err error) {
 			this.GeneratedCover = "titlepage.xhtml"
 		}
 	}
+
 	return
 }
 
-//生成文档目录
+// 生成文档目录
 func (this *Converter) generateTocNcx() (err error) {
 	ncx := `<?xml version='1.0' encoding='` + this.Config.Charset + `'?>
 			<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1" xml:lang="%v">
@@ -314,9 +329,9 @@ func (this *Converter) generateTocNcx() (err error) {
 	return ioutil.WriteFile(filepath.Join(this.BasePath, "toc.ncx"), []byte(ncx), os.ModePerm)
 }
 
-//生成文档目录，即summary.html
+// 生成文档目录，即 summary.html
 func (this *Converter) generateSummary() (err error) {
-	//目录
+	// 目录
 	summary := `<!DOCTYPE html>
 				<html lang="` + this.Config.Language + `">
 				<head>
@@ -336,7 +351,7 @@ func (this *Converter) generateSummary() (err error) {
 	return ioutil.WriteFile(filepath.Join(this.BasePath, "summary.html"), []byte(summary), os.ModePerm)
 }
 
-//将toc转成toc.ncx文件
+// 将 toc 转成 toc.ncx 文件
 func (this *Converter) tocToXml(pid, idx int) (codes []string, next_idx int) {
 	var code string
 	for _, toc := range this.Config.Toc {
@@ -356,48 +371,50 @@ func (this *Converter) tocToXml(pid, idx int) (codes []string, next_idx int) {
 			codes = append(codes, `</navPoint>`)
 		}
 	}
+
 	next_idx = idx
 	return
 }
 
-//将toc转成toc.ncx文件
+// 将 toc 转成 toc.ncx 文件
 func (this *Converter) tocToSummary(pid int) (summarys []string) {
 	summarys = append(summarys, "<ul>")
 	for _, toc := range this.Config.Toc {
 		if toc.Pid == pid {
 			summarys = append(summarys, fmt.Sprintf(`<li><a href="%v">%v</a></li>`, toc.Link, html.EscapeString(toc.Title)))
 			for _, item := range this.Config.Toc {
-
 				if item.Pid == toc.Id {
 					summarys = append(summarys, fmt.Sprintf(`<li><ul><li><a href="%v">%v</a></li>`, item.Link, html.EscapeString(item.Title)))
 					summarys = append(summarys, "<li>")
 					summarys = append(summarys, this.tocToSummary(item.Id)...)
 					summarys = append(summarys, "</li></ul></li>")
 				}
-
 			}
 		}
 	}
+
 	summarys = append(summarys, "</ul>")
 	return
 }
 
-//生成navPoint
+// 生成 navPoint
 func (this *Converter) getNavPoint(toc Toc, idx int) (navpoint string, nextidx int) {
+	this.Config.Order = append(this.Config.Order, toc.Link)
+
 	navpoint = `
 	<navPoint id="id%v" playOrder="%v">
 		<navLabel>
 			<text>%v</text>
 		</navLabel>
 		<content src="%v"/>`
+
 	navpoint = fmt.Sprintf(navpoint, toc.Id, idx, html.EscapeString(toc.Title), toc.Link)
-	this.Config.Order = append(this.Config.Order, toc.Link)
 	nextidx = idx + 1
 	return
 }
 
-//生成content.opf文件
-//倒数第二步调用
+// 生成 content.opf 文件
+// 倒数第二步调用
 func (this *Converter) generateContentOpf() (err error) {
 	var (
 		guide       string
@@ -423,33 +440,35 @@ func (this *Converter) generateContentOpf() (err error) {
 		spineArr = append(spineArr, `<itemref idref="titlepage"/>`)
 	}
 
-	log.Println("type:",this.Config.Type)
+	log.Println("type:", this.Config.Type)
 	if (this.Config.Type == "book") {
 		if _, err := os.Stat(this.BasePath + "/summary.html"); err == nil {
-			spineArr = append(spineArr, `<itemref idref="summary"/>`) //目录
-	
+			spineArr = append(spineArr, `<itemref idref="summary"/>`) // 目录
 		}
 	}
 
-	//扫描所有文件
+	// 扫描所有文件
 	if files, err := filetil.ScanFiles(this.BasePath); err == nil {
 		basePath := strings.Replace(this.BasePath, "\\", "/", -1)
 		for _, file := range files {
 			if !file.IsDir {
 				ext := strings.ToLower(filepath.Ext(file.Path))
-				sourcefile := strings.TrimPrefix(file.Path, basePath+"/")
+				sourcefile := strings.TrimPrefix(file.Path, basePath + "/")
 				id := "ncx"
+
 				if ext != ".ncx" {
-					if file.Name == "titlepage.xhtml" { //封面
+					if file.Name == "titlepage.xhtml" {     // 封面
 						id = "titlepage"
-					} else if file.Name == "summary.html" { //目录
+					} else if file.Name == "summary.html" { // 目录
 						id = "summary"
 					} else {
 						id = cryptil.Md5Crypt(sourcefile)
 					}
 				}
-				if mt := GetMediaType(ext); mt != "" { //不是封面图片，且media-type不为空
-					if sourcefile != strings.TrimLeft(this.Config.Cover, "./") { //不是封面图片，则追加进来。封面图片前面已经追加进来了
+
+				if mt := GetMediaType(ext); mt != "" {      // 不是封面图片，且 media-type 不为空
+					if sourcefile != strings.TrimLeft(this.Config.Cover, "./") {
+					    // 不是封面图片，则追加进来。封面图片前面已经追加进来了
 						manifestArr = append(manifestArr, fmt.Sprintf(`<item href="%v" id="%v" media-type="%v"/>`, sourcefile, id, mt))
 					}
 				}
@@ -461,11 +480,12 @@ func (this *Converter) generateContentOpf() (err error) {
 		items := make(map[string]string)
 		for _, link := range this.Config.Order {
 			id := cryptil.Md5Crypt(link)
-			if _, ok := items[id]; !ok { //去重
+			if _, ok := items[id]; !ok {                    // 去重
 				items[id] = id
 				spineArr = append(spineArr, fmt.Sprintf(`<itemref idref="%v"/>`, id))
 			}
 		}
+
 		manifest = manifest + strings.Join(manifestArr, "\n")
 		spine = strings.Join(spineArr, "\n")
 	} else {
@@ -489,80 +509,81 @@ func (this *Converter) generateContentOpf() (err error) {
 	if len(guide) > 0 {
 		guide = `<guide>` + guide + `</guide>`
 	}
+
 	pkg = fmt.Sprintf(pkg, meta, manifest, spine, guide)
 	return ioutil.WriteFile(filepath.Join(this.BasePath, "content.opf"), []byte(pkg), os.ModePerm)
 }
 
-//转成epub
+// 转成 epub
 func (this *Converter) convertToEpub() (err error) {
 	args := []string{
 		filepath.Join(this.OutputPath, "content.epub"),
 		filepath.Join(this.OutputPath, output, "book.epub"),
 	}
-	//cmd := exec.Command(ebookConvert, args...)
-	//
-	//if this.Debug {
-	//	fmt.Println(cmd.Args)
-	//}
-	//fmt.Println("正在转换EPUB文件", args[0])
-	//return cmd.Run()
 
-	return filetil.CopyFile(args[0],args[1])
+	return filetil.CopyFile(args[0], args[1])
 }
 
-//转成mobi
+// 转成 mobi
 func (this *Converter) convertToMobi() (err error) {
 	args := []string{
 		filepath.Join(this.OutputPath, "content.epub"),
 		filepath.Join(this.OutputPath, output, "book.mobi"),
 	}
+
 	cmd := exec.Command(ebookConvert, args...)
 	if this.Debug {
 		fmt.Println(cmd.Args)
 	}
+
 	fmt.Println("正在转换 MOBI 文件", args[0])
 	return cmd.Run()
 }
 
-//转成pdf
+// 转成 pdf
 func (this *Converter) convertToPdf() (err error) {
 	args := []string{
 		filepath.Join(this.OutputPath, "content.epub"),
 		filepath.Join(this.OutputPath, output, "book.pdf"),
 	}
-	//页面大小
+
+	// 页面大小
 	if len(this.Config.PaperSize) > 0 {
 		args = append(args, "--paper-size", this.Config.PaperSize)
 	}
-	//文字大小
+
+	// 文字大小
 	if len(this.Config.FontSize) > 0 {
 		args = append(args, "--pdf-default-font-size", this.Config.FontSize)
 	}
 
-	//header template
+	// header template
 	if len(this.Config.Header) > 0 {
 		args = append(args, "--pdf-header-template", this.Config.Header)
 	}
 
-	//footer template
+	// footer template
 	if len(this.Config.Footer) > 0 {
-		args = append(args, "--pdf-footer-template",this.Config.Footer)
+		args = append(args, "--pdf-footer-template", this.Config.Footer)
 	}
 
-	if strings.Count(this.Config.MarginLeft,"") > 0 {
+	if strings.Count(this.Config.MarginLeft, "") > 0 {
 		args = append(args, "--pdf-page-margin-left", this.Config.MarginLeft)
 	}
-	if strings.Count(this.Config.MarginTop,"") > 0 {
+
+	if strings.Count(this.Config.MarginTop, "") > 0 {
 		args = append(args, "--pdf-page-margin-top", this.Config.MarginTop)
 	}
-	if strings.Count(this.Config.MarginRight,"") > 0 {
+
+	if strings.Count(this.Config.MarginRight, "") > 0 {
 		args = append(args, "--pdf-page-margin-right", this.Config.MarginRight)
 	}
-	if strings.Count(this.Config.MarginBottom,"") > 0 {
+
+	if strings.Count(this.Config.MarginBottom, "") > 0 {
 		args = append(args, "--pdf-page-margin-bottom", this.Config.MarginBottom)
 	}
 
-	//更多选项
+	// 更多选项
 	if len(this.Config.More) > 0 {
 		args = append(args, this.Config.More...)
 	}
@@ -575,15 +596,16 @@ func (this *Converter) convertToPdf() (err error) {
 	return cmd.Run()
 }
 
-// 转成word
+// 转成 word
 func (this *Converter) convertToDocx() (err error) {
 	args := []string{
-		filepath.Join(this.OutputPath , "content.epub"),
-		filepath.Join(this.OutputPath , output , "book.docx"),
+		filepath.Join(this.OutputPath, "content.epub"),
+		filepath.Join(this.OutputPath, output , "book.docx"),
 	}
+
 	args = append(args, "--docx-no-toc")
 
-	//页面大小
+	// 页面大小
 	if len(this.Config.PaperSize) > 0 {
 		args = append(args, "--docx-page-size", this.Config.PaperSize)
 	}
@@ -591,42 +613,25 @@ func (this *Converter) convertToDocx() (err error) {
 	if len(this.Config.MarginLeft) > 0 {
 		args = append(args, "--docx-page-margin-left", this.Config.MarginLeft)
 	}
+
 	if len(this.Config.MarginTop) > 0 {
 		args = append(args, "--docx-page-margin-top", this.Config.MarginTop)
 	}
+
 	if len(this.Config.MarginRight) > 0 {
 		args = append(args, "--docx-page-margin-right", this.Config.MarginRight)
 	}
+
 	if len(this.Config.MarginBottom) > 0 {
 		args = append(args, "--docx-page-margin-bottom", this.Config.MarginBottom)
 	}
+
 	cmd := exec.Command(ebookConvert, args...)
 
 	if this.Debug {
 		fmt.Println(cmd.Args)
 	}
+
 	fmt.Println("正在转换 DOCX 文件", args[0])
 	return cmd.Run()
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
