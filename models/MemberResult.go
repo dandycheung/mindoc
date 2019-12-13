@@ -21,13 +21,14 @@ type MemberRelationshipResult struct {
 	RelationshipId int             `json:"relationship_id"`
 	BookId         int             `json:"book_id"`
 	// RoleId 角色：0 创始人(创始人不能被移除) / 1 管理员/2 编辑者/3 观察者
-	RoleId   conf.BookRole `json:"role_id"`
-	RoleName string        `json:"role_name"`
+	RoleId         conf.BookRole   `json:"role_id"`
+	RoleName       string          `json:"role_name"`
 }
 
 type SelectMemberResult struct {
 	Result []KeyValueItem `json:"results"`
 }
+
 type KeyValueItem struct {
 	Id   int    `json:"id"`
 	Text string `json:"text"`
@@ -64,20 +65,18 @@ func (m *MemberRelationshipResult) ResolveRoleName() *MemberRelationshipResult {
 	return m
 }
 
-// 根据项目ID查询用户
+// 根据项目 ID 查询用户
 func (m *MemberRelationshipResult) FindForUsersByBookId(bookId, pageIndex, pageSize int) ([]*MemberRelationshipResult, int, error) {
 	o := orm.NewOrm()
 
 	var members []*MemberRelationshipResult
 
 	sql1 := "SELECT * FROM md_relationship AS rel LEFT JOIN md_members as member ON rel.member_id = member.member_id WHERE rel.book_id = ? ORDER BY rel.relationship_id DESC  LIMIT ?,?"
-
 	sql2 := "SELECT count(*) AS total_count FROM md_relationship AS rel LEFT JOIN md_members as member ON rel.member_id = member.member_id WHERE rel.book_id = ?"
 
 	var total_count int
 
 	err := o.Raw(sql2, bookId).QueryRow(&total_count)
-
 	if err != nil {
 		return members, 0, err
 	}
@@ -85,7 +84,6 @@ func (m *MemberRelationshipResult) FindForUsersByBookId(bookId, pageIndex, pageS
 	offset := (pageIndex - 1) * pageSize
 
 	_, err = o.Raw(sql1, bookId, offset, pageSize).QueryRows(&members)
-
 	if err != nil {
 		return members, 0, err
 	}
@@ -93,6 +91,7 @@ func (m *MemberRelationshipResult) FindForUsersByBookId(bookId, pageIndex, pageS
 	for _, item := range members {
 		item.ResolveRoleName()
 	}
+
 	return members, total_count, nil
 }
 
@@ -108,3 +107,17 @@ func (m *MemberRelationshipResult) FindNotJoinUsersByAccount(bookId, limit int, 
 
 	return members, err
 }
+
+// 根据姓名以及用户名模糊查询指定文档中不存在的用户列表
+func (m *MemberRelationshipResult) FindNotJoinUsersByAccountOrRealName(bookId, limit int, keyWord string) ([]*Member, error) {
+	o := orm.NewOrm()
+
+	sql := "SELECT m.* FROM md_members as m LEFT JOIN md_relationship as rel ON rel.member_id = m.member_id AND rel.book_id = ? WHERE rel.relationship_id IS NULL AND (m.real_name LIKE ? OR m.account LIKE ?) LIMIT 0,?;"
+
+	var members []*Member
+
+	_, err := o.Raw(sql, bookId, keyWord,keyWord, limit).QueryRows(&members)
+
+	return members, err
+}
+
