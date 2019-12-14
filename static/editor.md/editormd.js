@@ -3121,11 +3121,11 @@
         },
 
         "list-ul" : function() {
-            listHandler(this.cm, false);
+            listxHandler(this.cm, false);
         },
 
         "list-ol" : function() {
-            listHandler(this.cm, true);
+            listxHandler(this.cm, true);
         },
 
         hr : function() {
