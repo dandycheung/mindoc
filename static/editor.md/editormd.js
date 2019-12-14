@@ -2879,6 +2879,121 @@
         }
     };
 
+    var headHandler = function (cm, level) {
+        var cursor    = cm.getCursor();
+        var selection = cm.getSelection();
+
+        if (cursor.ch !== 0)
+        {
+            cm.setCursor(cursor.line, 0);
+            cm.replaceSelection("# " + selection);
+            cm.setCursor(cursor.line, cursor.ch + 1 + level);
+        }
+        else
+        {
+            cm.replaceSelection("# " + selection);
+        }
+    };
+
+    var headxHandler = function (cm, level) {
+        var cursor    = cm.getCursor();
+        var selection = cm.getLine(cursor.line);
+
+        var mark = function (str, times) { var ret = ""; for (var i=0; i<times; i++) ret += str; return ret; }("#", level) + " ";
+        // var mark = new Array(level).fill("#").join("") + " "; // 上一条语句也可这样写，看起来简洁
+        var marklen = 1 + level;
+
+        var patt1 = new RegExp("^#{1}[ ]");        // 如果存在 H1
+        var patt2 = new RegExp("^#{1,6}[ ]");      // 如果存在 H2-H6
+
+        if (patt1.test(selection) === true)        // 如果存在 H1，取消 H1 的设置
+        {
+            selection = selection.replace(patt1, "");
+            cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line + 1, ch: 0 });
+            cm.replaceSelection(selection + "\n");
+            cm.setCursor(cursor.line, cursor.ch - marklen);
+        }
+        else if(patt2.test(selection) === true)    // 如果存在 H1-H6，取消 H2-H6，并替换为 H1
+        {
+            selection = selection.replace(patt2, "");
+            cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line + 1, ch: 0 });
+            cm.replaceSelection("# " + selection + "\n");
+            cm.setCursor(cursor.line, cursor.ch + marklen);
+        }
+        else                                       // 设置为 H1
+        {
+            cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line + 1, ch: 0 });
+            cm.replaceSelection("# " + selection + "\n");
+            cm.setCursor(cursor.line, cursor.ch + marklen);
+        }
+    };
+
+    var listHandler = function (cm, ordered) {
+	    var cursor    = cm.getCursor();
+	    var selection = cm.getSelection();
+
+	    var mark = (ordered === true) ? "1. " : "- ";
+	    var marklen = (ordered === true) ? 3 : 2;
+
+        if (selection === "")
+        {
+            cm.replaceSelection(mark + selection);
+        }
+        else
+        {
+            var selectionText = selection.split("\n");
+
+            for (var i = 0, len = selectionText.length; i < len; i++)
+            {
+                selectionText[i] = (selectionText[i] === "") ? "" : mark + selectionText[i];
+            }
+
+            cm.replaceSelection(selectionText.join("\n"));
+        }
+    };
+
+    var listxHandle = function (cm, ordered) {
+        var cursor    = cm.getCursor();
+        var selection = cm.getSelection();
+
+        var mark = (ordered === true) ? "1. " : "- ";
+        var marklen = (ordered === true) ? 3 : 2;
+
+        var patt1 = new RegExp((ordered === true) ? "^[0-9]+[\.][ ]" : "^-{1}[ ]");
+
+        if (selection === "")                  // 如果未选择，将该行设置为有序/无序列表
+        {
+            cm.setCursor(cursor.line, 0);
+            cm.replaceSelection(mark + selection);
+            cm.setCursor(cursor.line, cursor.ch + marklen);
+        }
+        else
+        {
+            var cnt = 0;
+            var selectionText = selection.split("\n");
+            // 判断取中内容是否已作列表标记
+            for (var i = 0, len = selectionText.length; i < len; i++)
+            {
+                if (patt1.test(selectionText[i]) === true ) { cnt++; }
+            }
+
+            if (cnt === selectionText.length)  // 如果全作了列表标记，取消标记
+            {
+                for (var i = 0, len = selectionText.length; i < len; i++)
+                {
+                    selectionText[i] = (selectionText[i] === "") ? "" : selectionText[i].replace(patt1, "");
+                }
+            }
+            else                               // 对未打上列表标记的，打上标记
+            {
+                for (var i = 0, len = selectionText.length; i < len; i++) {
+                    selectionText[i] = (selectionText[i] === "") ? "" : mark + selectionText[i].replace(patt1, "");
+                }
+            }
+            cm.replaceSelection(selectionText.join("\n"));
+        }
+    };
+
     editormd.toolbarHandlers = {
         undo : function() {
             this.cm.undo();
@@ -2982,149 +3097,35 @@
         },
 
         h1 : function() {
-            var cm        = this.cm;
-            var cursor    = cm.getCursor();
-            var selection = cm.getSelection();
-
-            if (cursor.ch !== 0)
-            {
-                cm.setCursor(cursor.line, 0);
-                cm.replaceSelection("# " + selection);
-                cm.setCursor(cursor.line, cursor.ch + 2);
-            }
-            else
-            {
-                cm.replaceSelection("# " + selection);
-            }
+            headxHandler(this.cm, 1);
         },
 
         h2 : function() {
-            var cm        = this.cm;
-            var cursor    = cm.getCursor();
-            var selection = cm.getSelection();
-
-            if (cursor.ch !== 0)
-            {
-                cm.setCursor(cursor.line, 0);
-                cm.replaceSelection("## " + selection);
-                cm.setCursor(cursor.line, cursor.ch + 3);
-            }
-            else
-            {
-                cm.replaceSelection("## " + selection);
-            }
+            headxHandler(this.cm, 2);
         },
 
         h3 : function() {
-            var cm        = this.cm;
-            var cursor    = cm.getCursor();
-            var selection = cm.getSelection();
-
-            if (cursor.ch !== 0)
-            {
-                cm.setCursor(cursor.line, 0);
-                cm.replaceSelection("### " + selection);
-                cm.setCursor(cursor.line, cursor.ch + 4);
-            }
-            else
-            {
-                cm.replaceSelection("### " + selection);
-            }
+            headxHandler(this.cm, 3);
         },
 
         h4 : function() {
-            var cm        = this.cm;
-            var cursor    = cm.getCursor();
-            var selection = cm.getSelection();
-
-            if (cursor.ch !== 0)
-            {
-                cm.setCursor(cursor.line, 0);
-                cm.replaceSelection("#### " + selection);
-                cm.setCursor(cursor.line, cursor.ch + 5);
-            }
-            else
-            {
-                cm.replaceSelection("#### " + selection);
-            }
+            headxHandler(this.cm, 4);
         },
 
         h5 : function() {
-            var cm        = this.cm;
-            var cursor    = cm.getCursor();
-            var selection = cm.getSelection();
-
-            if (cursor.ch !== 0)
-            {
-                cm.setCursor(cursor.line, 0);
-                cm.replaceSelection("##### " + selection);
-                cm.setCursor(cursor.line, cursor.ch + 6);
-            }
-            else
-            {
-                cm.replaceSelection("##### " + selection);
-            }
+            headxHandler(this.cm, 5);
         },
 
         h6 : function() {
-            var cm        = this.cm;
-            var cursor    = cm.getCursor();
-            var selection = cm.getSelection();
-
-            if (cursor.ch !== 0)
-            {
-                cm.setCursor(cursor.line, 0);
-                cm.replaceSelection("###### " + selection);
-                cm.setCursor(cursor.line, cursor.ch + 7);
-            }
-            else
-            {
-                cm.replaceSelection("###### " + selection);
-            }
+            headxHandler(this.cm, 6);
         },
 
         "list-ul" : function() {
-            var cm        = this.cm;
-            var cursor    = cm.getCursor();
-            var selection = cm.getSelection();
-
-            if (selection === "")
-            {
-                cm.replaceSelection("- " + selection);
-            }
-            else
-            {
-                var selectionText = selection.split("\n");
-
-                for (var i = 0, len = selectionText.length; i < len; i++)
-                {
-                    selectionText[i] = (selectionText[i] === "") ? "" : "- " + selectionText[i];
-                }
-
-                cm.replaceSelection(selectionText.join("\n"));
-            }
+            listHandler(this.cm, false);
         },
 
         "list-ol" : function() {
-            var cm        = this.cm;
-            var cursor    = cm.getCursor();
-            var selection = cm.getSelection();
-
-            if(selection === "")
-            {
-                cm.replaceSelection("1. " + selection);
-            }
-            else
-            {
-                var selectionText = selection.split("\n");
-
-                for (var i = 0, len = selectionText.length; i < len; i++)
-                {
-                    selectionText[i] = (selectionText[i] === "") ? "" : (i+1) + ". " + selectionText[i];
-                }
-
-                cm.replaceSelection(selectionText.join("\n"));
-            }
+            listHandler(this.cm, true);
         },
 
         hr : function() {
