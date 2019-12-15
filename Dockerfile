@@ -1,4 +1,4 @@
-FROM golang:1.10.3-alpine3.7 AS build
+FROM golang:1.11.4-alpine3.8 AS build
 
 #新增 GLIBC
 ENV GLIBC_VERSION "2.28-r0"
@@ -46,6 +46,7 @@ LABEL maintainer="longfei6671@163.com"
 
 RUN apk add --update && \
     apk add --no-cache --upgrade \
+    tzdata \
     mesa-gl \
     python \
     qt5-qtbase-x11 \
