@@ -88,15 +88,13 @@ func init() {
 	beego.Router("/book/setting/open", &controllers.BookController{}, "post:PrivatelyOwned")
 	beego.Router("/book/setting/transfer", &controllers.BookController{}, "post:Transfer")
 	beego.Router("/book/setting/upload", &controllers.BookController{}, "post:UploadCover")
-	beego.Router("/book/setting/token", &controllers.BookController{}, "post:CreateToken")
 	beego.Router("/book/setting/delete", &controllers.BookController{}, "post:Delete")
 
 	beego.Router("/book/team/add", &controllers.BookController{}, "POST:TeamAdd")
 	beego.Router("/book/team/delete", &controllers.BookController{}, "POST:TeamDelete")
 	beego.Router("/book/team/search", &controllers.BookController{}, "*:TeamSearch")
 
-
-	//管理文章的路由
+	// 管理文章的路由
 	beego.Router("/manage/blogs", &controllers.BlogController{},"*:ManageList")
 	beego.Router("/manage/blogs/setting/?:id", &controllers.BlogController{}, "*:ManageSetting")
 	beego.Router("/manage/blogs/edit/?:id",&controllers.BlogController{}, "*:ManageEdit")
@@ -105,12 +103,12 @@ func init() {
 	beego.Router("/manage/blogs/attach/:id",&controllers.BlogController{}, "post:RemoveAttachment")
 
 
-	//读文章的路由
+	// 读文章的路由
 	beego.Router("/blogs", &controllers.BlogController{}, "*:List")
 	beego.Router("/blog-attach/:id:int/:attach_id:int", &controllers.BlogController{},"get:Download")
 	beego.Router("/blog-:id([0-9]+).html",&controllers.BlogController{}, "*:Index")
 
-	//模板相关接口
+	// 模板相关接口
 	beego.Router("/api/template/get", &controllers.TemplateController{},"get:Get")
 	beego.Router("/api/template/list", &controllers.TemplateController{},"post:List")
 	beego.Router("/api/template/add", &controllers.TemplateController{},"post:Add")
@@ -133,7 +131,6 @@ func init() {
 	beego.Router("/docs/:key/:id", &controllers.DocumentController{}, "*:Read")
 	beego.Router("/docs/:key/search", &controllers.DocumentController{}, "post:Search")
 	beego.Router("/export/:key", &controllers.DocumentController{}, "*:Export")
-	beego.Router("/export/:key/:id", &controllers.DocumentController{}, "*:ExportDoc")
 	beego.Router("/qrcode/:key.png", &controllers.DocumentController{}, "get:QrCode")
 
 	beego.Router("/attach_files/:key/:attach_id", &controllers.DocumentController{}, "get:DownloadAttachment")
@@ -149,5 +146,4 @@ func init() {
 
 	beego.Router("/items", &controllers.ItemsetsController{},"get:Index")
 	beego.Router("/items/:key", &controllers.ItemsetsController{},"get:List")
-
 }
