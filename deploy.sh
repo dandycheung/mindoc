@@ -18,8 +18,6 @@ echo Step 1/2...
 # dirs: lib, runtime, static, uploads
 
 cp -r lib static views "$target"
-cp conf/app.* "$target/conf"
-
 if [ ! -d "$target/runtime" ]; then
   mkdir "$target/runtime"
 fi
@@ -30,7 +28,11 @@ fi
 
 echo Step 2/2...
 
-# files: favicon.ico, mindoc, simsun.ttc, start.sh
+# files: app.conf, favicon.ico, mindoc, simsun.ttc, start.sh
+
+if [ ! -f "$target/conf/app.conf" ]; then
+  cp conf/app.conf.example "$target/conf/app.conf"
+fi
 
 cp favicon.ico mindoc simsun.ttc start.sh "$target"
 
