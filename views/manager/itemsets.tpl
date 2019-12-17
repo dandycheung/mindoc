@@ -36,7 +36,8 @@
                                 <th width="10%">#</th>
                                 <th width="30%">项目空间名称</th>
                                 <th width="20%">项目空间标识</th>
-                                <th width="20%">项目数量</th>
+                                <th width="10%">权重</th>
+                                <th width="10%">项目数量</th>
                                 <th>操作</th>
                             </tr>
                             </thead>
@@ -46,9 +47,10 @@
                                 <td>{{$item.ItemId}}</td>
                                 <td>{{$item.ItemName}}</td>
                                 <td>{{$item.ItemKey}}</td>
+                                <td>{{$item.Weight}}</td>
                                 <td>{{$item.BookNumber}}</td>
                                 <td>
-                                    <button type="button" class="btn btn-sm btn-default" data-id="{{$item.ItemId}}" data-method="edit" data-name="{{$item.ItemName}}" data-key="{{$item.ItemKey}}">编辑</button>
+                                    <button type="button" class="btn btn-sm btn-default" data-id="{{$item.ItemId}}" data-method="edit" data-name="{{$item.ItemName}}" data-key="{{$item.ItemKey}}" data-weight="{{$item.Weight}}" >编辑</button>
                                     {{if ne $item.ItemId 1}}
                                     <button type="button" data-method="delete" class="btn btn-danger btn-sm" data-id="{{$item.ItemId}}" data-loading-text="删除中...">删除</button>
                                     {{end}}
@@ -90,7 +92,14 @@
                         <label class="col-sm-3 control-label" for="itemKey">项目空间标识<span class="error-message">*</span></label>
                         <div class="col-sm-9">
                             <input type="text" name="itemKey" id="itemKey" class="form-control" placeholder="项目空间标识" maxlength="50">
-                            <p class="text">项目空间标识只能由字母和数字组成且在2-100字符之间</p>
+                            <p class="text">项目空间标识只能由字母和数字组成且在 2-100 字符之间</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" for="weight">权重<span class="error-message">*</span></label>
+                        <div class="col-sm-9">
+                            <input type="text" name="weight" id="weight" class="form-control" placeholder="项目权重" maxlength="50">
+                            <p class="text">数字越小越靠前</p>
                         </div>
                     </div>
                     <div class="clearfix"></div>
@@ -127,6 +136,12 @@
                             <input type="text" name="itemKey" id="itemKey" class="form-control" placeholder="项目空间标识" maxlength="50">
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" for="weight">权重<span class="error-message">*</span></label>
+                        <div class="col-sm-9">
+                            <input type="text" name="weight" id="weight" class="form-control" placeholder="项目权重" maxlength="50">
+                        </div>
+                    </div>
                     <div class="clearfix"></div>
                 </div>
                 <div class="modal-footer">
@@ -151,7 +166,7 @@
         var addItemsetsDialogForm = $("#addItemsetsDialogForm");
         var editItemsetsDialogForm = $("#editItemsetsDialogForm");
 
-        editItemsetsDialogModal.on("shown.bs.modal",function () {
+        editItemsetsDialogModal.on("shown.bs.modal", function () {
             editItemsetsDialogModal.find("input[name='itemName']").focus();
         });
         $("#addItemsetsDialogModal").on("show.bs.modal", function () {
@@ -163,27 +178,31 @@
         addItemsetsDialogForm.ajaxForm({
             beforeSubmit: function () {
                 var $itemName = addItemsetsDialogForm.find("input[name='itemName']").val();
-                var $itemKey =  addItemsetsDialogForm.find("input[name='itemKey']").val();
+                var $itemKey = addItemsetsDialogForm.find("input[name='itemKey']").val();
+                var $weight = addItemsetsDialogForm.find("input[name='weight']").val();
 
                 if ($itemName == "") {
-                    showError("项目空间名称不能为空","#create-form-error-message");
+                    showError("项目空间名称不能为空", "#create-form-error-message");
                 }
                 if ($itemKey == "") {
-                    showError("项目空间标识不能为空","#create-form-error-message");
+                    showError("项目空间标识不能为空", "#create-form-error-message");
+                }
+                if ($weight == "") {
+                    showError("项目权重不能为空", "#create-form-error-message");
                 }
                 $("#btnAddItemsets").button("loading");
-                showError("","#create-form-error-message");
+                showError("", "#create-form-error-message");
                 return true;
             },
             success: function ($res) {
                 if ($res.errcode === 0) {
                     window.location = window.document.location;
                 } else {
-                    showError($res.message,"#create-form-error-message");
+                    showError($res.message, "#create-form-error-message");
                 }
             },
             error: function () {
-                showError("服务器异常","#create-form-error-message");
+                showError("服务器异常", "#create-form-error-message");
             },
             complete: function () {
                 $("#btnAddItemsets").button("reset");
@@ -193,64 +212,70 @@
         editItemsetsDialogForm.ajaxForm({
            beforeSubmit: function () {
                var $itemName = editItemsetsDialogForm.find("input[name='itemName']").val();
-               var $itemKey =  editItemsetsDialogForm.find("input[name='itemKey']").val();
+               var $itemKey = editItemsetsDialogForm.find("input[name='itemKey']").val();
+               var $weight = editItemsetsDialogForm.find("input[name='weight']").val();
 
                if ($itemName == "") {
-                   showError("项目空间名称不能为空","#edit-form-error-message");
+                   showError("项目空间名称不能为空", "#edit-form-error-message");
                }
                if ($itemKey == "") {
-                   showError("项目空间标识不能为空","#edit-form-error-message");
+                   showError("项目空间标识不能为空", "#edit-form-error-message");
+               }
+               if ( $weight == "") {
+                   showError("项目权重不能为空", "#edit-form-error-message");
                }
                $("#btnEditItemsets").button("loading");
-               showError("","#edit-form-error-message");
+               showError("", "#edit-form-error-message");
                return true;
            } ,
-            success : function ($res) {
+            success: function ($res) {
                 if ($res.errcode === 0) {
                     window.location = window.document.location;
                 } else {
-                    showError($res.message,"#edit-form-error-message");
+                    showError($res.message, "#edit-form-error-message");
                 }
             },
             error: function () {
-                showError("服务器异常","#edit-form-error-message");
+                showError("服务器异常", "#edit-form-error-message");
             },
             complete: function () {
                 $("#btnEditItemsets").button("reset");
             }
         });
 
-        $("#ItemsetsList").on("click","button[data-method='delete']",function () {
+        $("#ItemsetsList").on("click", "button[data-method='delete']", function () {
             var id = $(this).attr("data-id");
             var $this = $(this);
             $(this).button("loading");
             $.ajax({
-                url : "{{urlfor "ManagerController.ItemsetsDelete"}}",
+                url: "{{urlfor "ManagerController.ItemsetsDelete"}}",
                 data: {"itemId":id},
-                type : "post",
-                dataType : "json",
-                success : function (res) {
+                type: "post",
+                dataType: "json",
+                success: function (res) {
                     if(res.errcode === 0){
                         $this.closest("tr").remove().empty();
                     }else {
                         layer.msg(res.message);
                     }
                 },
-                error : function () {
+                error: function () {
                     layer.msg("服务器异常");
                 },
-                complete : function () {
+                complete: function () {
                     $this.button("reset");
                 }
             });
-        }).on("click","button[data-method='edit']",function () {
+        }).on("click", "button[data-method='edit']", function () {
             var $itemId = $(this).attr("data-id");
             var $itemName = $(this).attr("data-name");
             var $itemKey = $(this).attr("data-key");
+            var $weight = $(this).attr("data-weight");
 
             editItemsetsDialogModal.find("input[name='itemId']").val($itemId);
             editItemsetsDialogModal.find("input[name='itemName']").val($itemName);
             editItemsetsDialogModal.find("input[name='itemKey']").val($itemKey);
+            editItemsetsDialogModal.find("input[name='weight']").val($weight);
 
             editItemsetsDialogModal.modal("show");
         });

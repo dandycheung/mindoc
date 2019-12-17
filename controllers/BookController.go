@@ -36,7 +36,6 @@ func (c *BookController) Index() {
 	pageIndex, _ := c.GetInt("page", 1)
 
 	books, totalCount, err := models.NewBook().FindToPager(pageIndex, conf.PageSize, c.Member.MemberId)
-
 	if err != nil {
 		logs.Error("BookController.Index => ", err)
 		c.Abort("500")
@@ -54,13 +53,14 @@ func (c *BookController) Index() {
 	} else {
 		c.Data["PageHtml"] = ""
 	}
-	b, err := json.Marshal(books)
 
+	b, err := json.Marshal(books)
 	if err != nil || len(books) <= 0 {
 		c.Data["Result"] = template.JS("[]")
 	} else {
 		c.Data["Result"] = template.JS(string(b))
 	}
+
 	if itemsets, err := models.NewItemsets().First(1); err == nil {
 		c.Data["Item"] = itemsets
 	}
@@ -72,7 +72,6 @@ func (c *BookController) Dashboard() {
 	c.TplName = "book/dashboard.tpl"
 
 	key := c.Ctx.Input.Param(":key")
-
 	if key == "" {
 		c.Abort("404")
 	}
@@ -82,6 +81,7 @@ func (c *BookController) Dashboard() {
 		if err == models.ErrPermissionDenied {
 			c.Abort("403")
 		}
+
 		c.Abort("500")
 		return
 	}
@@ -96,7 +96,6 @@ func (c *BookController) Setting() {
 	c.TplName = "book/setting.tpl"
 
 	key := c.Ctx.Input.Param(":key")
-
 	if key == "" {
 		c.Abort("404")
 	}
@@ -106,9 +105,11 @@ func (c *BookController) Setting() {
 		if err == orm.ErrNoRows {
 			c.Abort("404")
 		}
+
 		if err == models.ErrPermissionDenied {
 			c.Abort("403")
 		}
+
 		c.Abort("500")
 		return
 	}
@@ -117,11 +118,12 @@ func (c *BookController) Setting() {
 	if book.RoleId != conf.BookFounder && book.RoleId != conf.BookAdmin {
 		c.Abort("403")
 	}
+
 	if book.PrivateToken != "" {
 		book.PrivateToken = conf.URLFor("DocumentController.Index", ":key", book.Identify, "token", book.PrivateToken)
 	}
-	c.Data["Model"] = book
 
+	c.Data["Model"] = book
 }
 
 // 保存项目信息
@@ -696,7 +698,7 @@ func (c *BookController) Release() {
 	if c.Member.IsAdministrator() {
 		book, err := models.NewBook().FindByFieldFirst("identify", identify)
 		if err != nil {
-			beego.Error("发布文档失败 ->", err)
+			beego.Error("发布文档失败 -> ", err)
 			c.JsonResult(6003, "文档不存在")
 			return
 		}
@@ -996,4 +998,60 @@ func (c *BookController) IsPermission() (*models.BookResult, error) {
 	}
 
 	return book, nil
+}
+
+func (c *BookController) Pin() {
+	identify := c.GetString("identify")
+	book, err := models.NewBook().FindByIdentify(identify)
+	if err != nil {
+		c.JsonResult(500, err.Error())
+	}
+
+	pin := models.NewBookPin()
+	pinCount, pinErr := pin.CountByMemberBookId(book.BookId, c.Member.MemberId)
+	if pinErr != nil {
+		c.JsonResult(500, pinErr.Error())
+	}
+
+	if pinCount > 0 {
+		c.JsonResult(7001, "已经 Pin 过")
+	}
+
+	pin = models.NewBookPin()
+	pin.BookId = book.BookId
+	pin.MemberId = c.Member.MemberId
+
+	pin, err = pin.Insert()
+	if err == nil {
+		c.JsonResult(0, "OK")
+    } else {
+		c.JsonResult(500, err.Error())
+	}
+}
+
+func (c *BookController) Unpin() {
+	identify := c.GetString("identify")
+	book, err := models.NewBook().FindByIdentify(identify)
+	if err != nil {
+		c.JsonResult(500, err.Error())
+	}
+
+	pin := models.NewBookPin()
+	pinCount, pinErr := pin.CountByMemberBookId(book.BookId, c.Member.MemberId)
+	if pinErr != nil {
+		c.JsonResult(500, pinErr.Error())
+	}
+
+	if pinCount == 0 {
+		c.JsonResult(7002, "没有 Pin 过")
+	}
+
+	pin, err = pin.FindByMemberBookId(book.BookId, c.Member.MemberId)
+
+	err = pin.Delete()
+	if err == nil {
+		c.JsonResult(0, "OK")
+    } else {
+		c.JsonResult(500, err.Error())
+	}
 }

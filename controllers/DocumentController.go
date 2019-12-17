@@ -70,7 +70,6 @@ func (c *DocumentController) Index() {
 	}
 
 	tree, err := models.NewDocument().CreateDocumentTreeForHtml(bookResult.BookId, selected)
-
 	if err != nil {
 		if err == orm.ErrNoRows {
 			c.ShowErrorPage(404, "当前项目没有文档")

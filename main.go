@@ -37,6 +37,6 @@ func main() {
 	}
 
 	if err := s.Run(); err != nil {
-		log.Fatal("启动程序失败 ->", err)
+		log.Fatal("启动程序失败 -> ", err)
 	}
 }

@@ -37,15 +37,18 @@
         <div class="container-fluid">
             <div class="navbar-header pull-left manual-title">
                 <span class="slidebar" id="slidebar"><i class="fa fa-align-justify"></i></span>
+                <a href="/" class="book-title" >
+                    <i style="font-size:20px;" class="fa fa-home" aria-hidden="true"></i>
+                </a>
+                &nbsp;&rsaquo;&nbsp;
                 <a href="{{urlfor "DocumentController.Index" ":key" .Model.Identify}}" title="{{.Model.BookName}}" class="book-title">{{.Model.BookName}}</a>
                 <span style="font-size: 12px;font-weight: 100;"></span>
             </div>
             <div class="navbar-header pull-right manual-menu">
-                <a href="javascript:window.print();" id="printSinglePage" class="btn btn-default" style="margin-right: 10px;"><i class="fa fa-print"></i> 打印</a>
+                
                 {{if gt .Member.MemberId 0}}
                 {{if eq .Model.RoleId 0 1 2}}
                 <div class="dropdown pull-right">
-                    <a href="{{urlfor "DocumentController.Edit" ":key" .Model.Identify ":id" ""}}" class="btn btn-default"><i class="fa fa-edit" aria-hidden="true"></i> 编辑</a>
                     {{if eq .Model.RoleId 0 1}}
                     <a href="{{urlfor "BookController.Users" ":key" .Model.Identify}}" class="btn btn-success"><i class="fa fa-user" aria-hidden="true"></i> 成员</a>
                     <a href="{{urlfor "BookController.Setting" ":key" .Model.Identify}}" class="btn btn-primary"><i class="fa fa-gear" aria-hidden="true"></i> 设置</a>
@@ -53,48 +56,49 @@
                 </div>
                 {{end}}
                 {{end}}
-                <div class="dropdown pull-right" style="margin-right: 10px;">
-                    <a href="{{urlfor "HomeController.Index"}}" class="btn btn-default"><i class="fa fa-home" aria-hidden="true"></i> 首页</a>
-                </div>
-                <div class="dropdown pull-right" style="margin-right: 10px;">
+
                 {{if eq .Model.PrivatelyOwned 0}}
                 {{if .Model.IsEnableShare}}
-                    <button type="button" class="btn btn-success" data-toggle="modal" data-target="#shareProject"><i class="fa fa-share-square" aria-hidden="true"></i> 分享</button>
+                    <div class="dropdown pull-right" style="margin-right: 10px;">
+                        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#shareProject"><i class="fa fa-share-square" aria-hidden="true"></i> 分享</button>
+                    </div>
                 {{end}}
                 {{end}}
-                </div>
-                {{if .Model.IsDownload}}
-                <div class="dropdown pull-right" style="margin-right: 10px;">
-                    <button type="button" class="btn btn-primary" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fa fa-cloud-download" aria-hidden="true"></i> 全部下载 <span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel" style="margin-top: -5px;">
-                        <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "pdf"}}" target="_blank">PDF</a> </li>
-                        <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "epub"}}" target="_blank">EPUB</a> </li>
-                        <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "mobi"}}" target="_blank">MOBI</a> </li>
-                        <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "docx"}}" target="_blank">Word</a> </li>
-                        {{if eq .Model.Editor "markdown"}}
-                        <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "markdown"}}" target="_blank">Markdown</a> </li>
-                        {{end}}
-                    </ul>
-                </div>
-
 
                 <div class="dropdown pull-right" style="margin-right: 10px;">
-                    <button type="button" class="btn btn-primary" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fa fa-cloud-download" aria-hidden="true"></i> 文档下载 <span class="caret"></span>
-                    </button>
-                    <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel" style="margin-top: -5px;">
-                        <li><a href="javascript:exportDoc('pdf')" >PDF</a> </li>
-                        <li><a href="javascript:exportDoc('epub')" >EPUB</a> </li>
-                        <li><a href="javascript:exportDoc('mobi')" >MOBI</a> </li>
-                        <li><a href="javascript:exportDoc('docx')" >Word</a> </li>
-                        {{if eq .Model.Editor "markdown"}}
-                        <li><a href="javascript:exportDoc('markdown')" >Markdown</a> </li>
-                        {{end}}
-                    </ul>
+                    {{if .Model.IsDownload}}
+                        <button type="button" class="btn btn-default" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fa fa-cloud-download" aria-hidden="true"></i> 下载 <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel" style="margin-top: -5px;">
+                            <li class="dropdown-header">当前文档</li>
+                            <li><a href="javascript:exportDoc('pdf')" >PDF</a> </li>
+                            <li><a href="javascript:exportDoc('epub')" >EPUB</a> </li>
+                            <li><a href="javascript:exportDoc('mobi')" >MOBI</a> </li>
+                            <li><a href="javascript:exportDoc('docx')" >Word</a> </li>
+                            {{if eq .Model.Editor "markdown"}}
+                            <li><a href="javascript:exportDoc('markdown')" >Markdown</a> </li>
+                            {{end}}
+                            <li class="dropdown-header">全部文档</li>
+                            <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "pdf"}}" target="_blank">PDF</a> </li>
+                            <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "epub"}}" target="_blank">EPUB</a> </li>
+                            <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "mobi"}}" target="_blank">MOBI</a> </li>
+                            <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "docx"}}" target="_blank">Word</a> </li>
+                            {{if eq .Model.Editor "markdown"}}
+                            <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "markdown"}}" target="_blank">Markdown</a> </li>
+                            {{end}}
+                        </ul>
+                    {{end}}
+
+                    <a href="javascript:window.print();" id="printSinglePage" class="btn btn-default" ><i class="fa fa-print"></i> 打印</a>
                 </div>
 
+                {{if gt .Member.MemberId 0}}
+                {{if eq .Model.RoleId 0 1 2}}
+                <div class="dropdown pull-right" style="margin-right: 10px;" >
+                    <a href="{{urlfor "DocumentController.Edit" ":key" .Model.Identify ":id" ""}}" class="btn btn-warning"><i class="fa fa-edit" aria-hidden="true"></i> 编辑</a>
+                </div>
+                {{end}}
                 {{end}}
             </div>
         </div>
@@ -151,11 +155,10 @@
         </div>
         <div class="manual-right">
             <div class="manual-article">
-                <div class="article-head">
+                <div class="article-head" style="display:none;">
                     <div class="container-fluid">
                         <div class="row">
                             <div class="col-md-2">
-
                             </div>
                             <div class="col-md-8 text-center">
                                 <h1 id="article-title">{{.Title}}</h1>
@@ -299,12 +302,12 @@
 <script src="{{cdnjs "/static/js/splitbar.js" "version"}}" type="text/javascript"></script>
 <script type="text/javascript">
 $(function () {
-    $("#searchList").on("click","a",function () {
+    $("#searchList").on("click", "a", function () {
         var id = $(this).attr("data-id");
         var url = "{{urlfor "DocumentController.Read" ":key" .Model.Identify ":id" ""}}/" + id;
         $(this).parent("li").siblings().find("a").removeClass("active");
         $(this).addClass("active");
-        loadDocument(url,id,function (body) {
+        loadDocument(url, id, function (body) {
             return $(body).highlight(window.keyword);
         });
     });
@@ -312,13 +315,46 @@ $(function () {
 
 function exportDoc(type)
 {
-    var currentLi =  $('li[aria-selected="true"]')[0]
+    var currentLi = $('li[aria-selected="true"]')[0]
     var key = "{{ .Model.Identify }}";
     var docId = $(currentLi).attr("id");
-    var docExportUrl = "/export/"+key+"/"+docId+"?output="+type;
+    var docExportUrl = "/export/" + key + "/" + docId + "?output=" + type;
     window.open(docExportUrl);
 }
 
+function pin(bookId)
+{
+    $.ajax({
+        url: "/book/pin?identify={{ .Model.Identify }}",
+        type: "GET",
+        success: function (res) {
+            if (res.errcode === 0) {
+                $("#pinButton").hide();
+                $("#unpinButton").show();
+                layer.msg('操作成功');
+            } else {
+                layer.msg(res.message);
+            }
+        }
+    });
+}
+
+function unpin(bookId)
+{
+    $.ajax({
+        url: "/book/unpin?identify={{ .Model.Identify }}",
+        type: "GET",
+        success: function (res) {
+            if (res.errcode === 0) {
+                $("#unpinButton").hide();
+                $("#pinButton").show();
+                layer.msg('操作成功');
+            } else {
+                layer.msg(res.message);
+            }
+        }
+    });
+}
 </script>
 {{.Scripts}}
 </body>

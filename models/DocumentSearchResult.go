@@ -1,16 +1,16 @@
 package models
 
 import (
+	"strings"
 	"time"
 
-	"github.com/astaxie/beego/orm"
 	"github.com/astaxie/beego"
-	"strings"
+	"github.com/astaxie/beego/orm"
 )
 
 type DocumentSearchResult struct {
-	DocumentId   int    `json:"doc_id"`
-	DocumentName string `json:"doc_name"`
+	DocumentId   int       `json:"doc_id"`
+	DocumentName string    `json:"doc_name"`
 	// Identify 文档唯一标识
 	Identify     string    `json:"identify"`
 	Description  string    `json:"description"`
@@ -258,7 +258,7 @@ WHERE (book.privately_owned = 0 OR rel1.relationship_id > 0 or team.team_member_
 
 		err = o.Raw(sql4, memberId, memberId, keyword, keyword).QueryRow(&c)
 		if err != nil {
-			beego.Error("查询搜索结果失败 -> ",err)
+			beego.Error("查询搜索结果失败 -> ", err)
 			return
 		}
 

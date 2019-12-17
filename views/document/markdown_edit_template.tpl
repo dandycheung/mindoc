@@ -167,16 +167,16 @@
 
                 </div>
                 <div class="form-group">
-                        <div class="col-lg-4">
-                            <label>
-                                <input type="radio" name="is_open" value="1"> 展开<span class="text">（在阅读时会自动展开节点）</span>
-                            </label>
-                        </div>
-                        <div class="col-lg-4">
-                            <label>
-                                <input type="radio" name="is_open" value="0" checked> 关闭<span class="text">（在阅读时会关闭节点）</span>
-                            </label>
-                        </div>
+                    <div class="col-lg-4">
+                        <label>
+                            <input type="radio" name="is_open" value="1"> 展开<span class="text">（在阅读时会自动展开节点）</span>
+                        </label>
+                    </div>
+                    <div class="col-lg-4">
+                        <label>
+                            <input type="radio" name="is_open" value="0" checked> 关闭<span class="text">（在阅读时会关闭节点）</span>
+                        </label>
+                    </div>
                     <div class="col-lg-4">
                         <label>
                             <input type="radio" name="is_open" value="2"> 空目录<span class="text">（单击时会展开下级节点）</span>
@@ -441,72 +441,70 @@
 <script src="{{cdnjs "/static/js/markdown.js" "version"}}" type="text/javascript"></script>
 <script type="text/javascript">
     $(function () {
-        $("#attachInfo").on("click",function () {
+        $("#attachInfo").on("click", function () {
             $("#uploadAttachModal").modal("show");
         });
         window.uploader = null;
 
-        $("#uploadAttachModal").on("shown.bs.modal",function () {
-            if(window.uploader === null){
+        $("#uploadAttachModal").on("shown.bs.modal", function () {
+            if(window.uploader === null) {
                 try {
                     window.uploader = WebUploader.create({
                         auto: true,
-                        dnd : true,
+                        dnd: true,
                         swf: '{{.BaseUrl}}/static/webuploader/Uploader.swf',
                         server: '{{urlfor "DocumentController.Upload"}}',
-                        formData : { "identify" : {{.Model.Identify}},"doc_id" :  window.selectNode.id },
+                        formData: { "identify": {{.Model.Identify}}, "doc_id":  window.selectNode.id },
                         pick: "#filePicker",
-                        fileVal : "editormd-file-file",
-                        compress : false,
+                        fileVal: "editormd-file-file",
+                        compress: false,
                         fileSingleSizeLimit: {{.UploadFileSize}}
-                    }).on("beforeFileQueued",function (file) {
+                    }).on("beforeFileQueued", function (file) {
                         // uploader.reset();
                         this.options.formData.doc_id = window.selectNode.id;
-                    }).on( 'fileQueued', function( file ) {
+                    }).on('fileQueued', function(file) {
                         var item = {
-                            state : "wait",
-                            attachment_id : file.id,
-                            file_size : file.size,
-                            file_name : file.name,
-                            message : "正在上传"
+                            state: "wait",
+                            attachment_id: file.id,
+                            file_size: file.size,
+                            file_name: file.name,
+                            message: "正在上传"
                         };
-                        window.vueApp.lists.push(item);
 
-                    }).on("uploadError",function (file,reason) {
-                        for(var i in window.vueApp.lists){
+                        window.vueApp.lists.push(item);
+                    }).on("uploadError", function (file, reason) {
+                        for(var i in window.vueApp.lists) {
                             var item = window.vueApp.lists[i];
-                            if(item.attachment_id == file.id){
+                            if(item.attachment_id == file.id) {
                                 item.state = "error";
                                 item.message = "上传失败:" + reason;
                                 break;
                             }
                         }
-
                     }).on("uploadSuccess",function (file, res) {
-
                         for(var index in window.vueApp.lists){
                             var item = window.vueApp.lists[index];
-                            if(item.attachment_id === file.id){
+                            if(item.attachment_id === file.id) {
                                 if(res.errcode === 0) {
                                     window.vueApp.lists.splice(index, 1, res.attach ? res.attach : res.data);
-                                }else{
+                                } else {
                                     item.message = res.message;
                                     item.state = "error";
                                 }
                             }
                         }
-                    }).on("uploadProgress",function (file, percentage) {
-                        var $li = $( '#'+file.id ),
+                    }).on("uploadProgress", function (file, percentage) {
+                        var $li = $('#' + file.id),
                             $percent = $li.find('.progress .progress-bar');
 
-                        $percent.css( 'width', percentage * 100 + '%' );
+                        $percent.css('width', percentage * 100 + '%');
                     }).on("error", function (type) {
-                        if(type === "F_EXCEED_SIZE"){
+                        if(type === "F_EXCEED_SIZE") {
                             layer.msg("文件超过了限定大小");
                         }
                         console.log(type);
                     });
-                }catch(e){
+                } catch(e) {
                     console.log(e);
                 }
             }

@@ -15,7 +15,7 @@ import (
 	"github.com/lifei6671/mindoc/utils"
 )
 
-// AccountController 用户登录与注册
+// 用户登录与注册
 type AccountController struct {
 	BaseController
 }
@@ -30,16 +30,20 @@ func (c *AccountController) referer() string {
 
 func (c *AccountController) Prepare() {
 	c.BaseController.Prepare()
+
 	c.EnableXSRF = true
 	c.Data["xsrfdata"] = template.HTML(c.XSRFFormHTML())
+
 	if c.Ctx.Input.IsPost() {
 		token := c.Ctx.Input.Query("_xsrf")
 		if token == "" {
 			token = c.Ctx.Request.Header.Get("X-Xsrftoken")
 		}
+
 		if token == "" {
 			token = c.Ctx.Request.Header.Get("X-Csrftoken")
 		}
+
 		if token == "" {
 			if c.IsAjax() {
 				c.JsonResult(403, "非法请求")
@@ -47,6 +51,7 @@ func (c *AccountController) Prepare() {
 				c.ShowErrorPage(403, "非法请求")
 			}
 		}
+
 		xsrfToken := c.XSRFToken()
 		if xsrfToken != token {
 			if c.IsAjax() {
@@ -58,10 +63,9 @@ func (c *AccountController) Prepare() {
 	}
 }
 
-// Login 用户登录
+// 用户登录
 func (c *AccountController) Login() {
 	c.Prepare()
-
 	c.TplName = "account/login.tpl"
 
 	if member, ok := c.GetSession(conf.LoginSessionName).(models.Member); ok && member.MemberId > 0 {
@@ -69,11 +73,14 @@ func (c *AccountController) Login() {
 		if u == "" {
 			u = c.Ctx.Request.Header.Get("Referer")
 		}
+
 		if u == "" {
 			u = conf.URLFor("HomeController.Index")
 		}
+
 		c.Redirect(u, 302)
 	}
+
 	var remember CookieRemember
 	// 如果 Cookie 中存在登录信息
 	if cookie, ok := c.GetSecureCookie(conf.GetAppKey(), "login"); ok {
@@ -115,6 +122,7 @@ func (c *AccountController) Login() {
 				remember.MemberId = member.MemberId
 				remember.Account = member.Account
 				remember.Time = time.Now()
+
 				v, err := utils.Encode(remember)
 				if err == nil {
 					c.SetSecureCookie(conf.GetAppKey(), "login", v, time.Now().Add(time.Hour * 24 * 30).Unix())
@@ -133,7 +141,6 @@ func (c *AccountController) Login() {
 
 // 登录成功后的操作，如重定向到原始请求页面
 func (c *AccountController) LoggedIn(isPost bool) interface{} {
-
 	turl := c.referer()
 
 	if !isPost {
@@ -143,6 +150,7 @@ func (c *AccountController) LoggedIn(isPost bool) interface{} {
 		var data struct {
 			TURL string `json:"url"`
 		}
+
 		data.TURL = turl
 		return data
 	}
@@ -152,10 +160,11 @@ func (c *AccountController) LoggedIn(isPost bool) interface{} {
 func (c *AccountController) Register() {
 	c.TplName = "account/register.tpl"
 
-	//如果用户登录了，则跳转到网站首页
+	// 如果用户登录了，则跳转到网站首页
 	if member, ok := c.GetSession(conf.LoginSessionName).(models.Member); ok && member.MemberId > 0 {
 		c.Redirect(conf.URLFor("HomeController.Index"), 302)
 	}
+
 	// 如果没有开启用户注册
 	if v, ok := c.Option["ENABLED_REGISTER"]; ok && !strings.EqualFold(v, "true") {
 		c.Abort("404")
@@ -171,15 +180,19 @@ func (c *AccountController) Register() {
 		if ok, err := regexp.MatchString(conf.RegexpAccount, account); account == "" || !ok || err != nil {
 			c.JsonResult(6001, "账号只能由英文字母数字组成，且在 3-50 个字符")
 		}
+
 		if l := strings.Count(password1, ""); password1 == "" || l > 50 || l < 6 {
 			c.JsonResult(6002, "密码必须在 6-50 个字符之间")
 		}
+
 		if password1 != password2 {
 			c.JsonResult(6003, "确认密码不正确")
 		}
+
 		if ok, err := regexp.MatchString(conf.RegexpEmail, email); !ok || err != nil || email == "" {
 			c.JsonResult(6004, "邮箱格式不正确")
 		}
+
 		// 如果开启了验证码
 		if v, ok := c.Option["ENABLED_CAPTCHA"]; ok && strings.EqualFold(v, "true") {
 			v, ok := c.GetSession(conf.CaptchaSessionName).(string)
@@ -215,13 +228,13 @@ func (c *AccountController) FindPassword() {
 	mailConf := conf.GetMailConfig()
 
 	if c.Ctx.Input.IsPost() {
-
 		email := c.GetString("email")
 		captcha := c.GetString("code")
 
 		if email == "" {
 			c.JsonResult(6005, "邮箱地址不能为空")
 		}
+
 		if !mailConf.EnableMail {
 			c.JsonResult(6004, "未启用邮件服务")
 		}
@@ -238,19 +251,21 @@ func (c *AccountController) FindPassword() {
 		if err != nil {
 			c.JsonResult(6006, "邮箱不存在")
 		}
+
 		if member.Status != 0 {
 			c.JsonResult(6007, "账号已被禁用")
 		}
+
 		if member.AuthMethod == conf.AuthMethodLDAP {
 			c.JsonResult(6011, "当前用户不支持找回密码")
 		}
 
 		count, err := models.NewMemberToken().FindSendCount(email, time.Now().Add(-1*time.Hour), time.Now())
-
 		if err != nil {
 			beego.Error(err)
 			c.JsonResult(6008, "发送邮件失败")
 		}
+
 		if count > mailConf.MailNumber {
 			c.JsonResult(6008, "发送次数太多，请稍候再试")
 		}
@@ -261,6 +276,7 @@ func (c *AccountController) FindPassword() {
 		memberToken.Email = email
 		memberToken.MemberId = member.MemberId
 		memberToken.IsValid = false
+
 		if _, err := memberToken.InsertOrUpdate(); err != nil {
 			c.JsonResult(6009, "邮件发送失败")
 		}
@@ -278,7 +294,6 @@ func (c *AccountController) FindPassword() {
 		}
 
 		go func(mailConf *conf.SmtpConf, email string, body string) {
-
 			mailConfig := &mail.SMTPConfig{
 				Username: mailConf.SmtpUserName,
 				Password: mailConf.SmtpPassword,
@@ -287,6 +302,7 @@ func (c *AccountController) FindPassword() {
 				Secure:   mailConf.Secure,
 				Identity: "",
 			}
+
 			beego.Info(mailConfig)
 
 			c := mail.NewSMTPClient(mailConfig)
@@ -303,6 +319,7 @@ func (c *AccountController) FindPassword() {
 			} else {
 				beego.Info("邮件发送成功：" + email)
 			}
+
 			//auth := smtp.PlainAuth(
 			//	"",
 			//	mail_conf.SmtpUserName,
@@ -333,13 +350,13 @@ func (c *AccountController) FindPassword() {
 
 	if token != "" && email != "" {
 		memberToken, err := models.NewMemberToken().FindByFieldFirst("token", token)
-
 		if err != nil {
 			beego.Error(err)
 			c.Data["ErrorMessage"] = "邮件已失效"
 			c.TplName = "errors/error.tpl"
 			return
 		}
+
 		subTime := memberToken.SendTime.Sub(time.Now())
 
 		if !strings.EqualFold(memberToken.Email, email) || subTime.Minutes() > float64(mailConf.MailExpired) || !memberToken.ValidTime.IsZero() {
@@ -347,16 +364,18 @@ func (c *AccountController) FindPassword() {
 			c.TplName = "errors/error.tpl"
 			return
 		}
+
 		c.Data["Email"] = memberToken.Email
 		c.Data["Token"] = memberToken.Token
-		c.TplName = "account/find_password_setp2.tpl"
 
+		c.TplName = "account/find_password_setp2.tpl"
 	}
 }
 
 // 校验邮件并修改密码
 func (c *AccountController) ValidEmail() {
 	c.Prepare()
+
 	password1 := c.GetString("password1")
 	password2 := c.GetString("password2")
 	captcha := c.GetString("code")
@@ -366,51 +385,55 @@ func (c *AccountController) ValidEmail() {
 	if password1 == "" {
 		c.JsonResult(6001, "密码不能为空")
 	}
+
 	if l := strings.Count(password1, ""); l < 6 || l > 50 {
 		c.JsonResult(6001, "密码不能为空且必须在 6-50 个字符之间")
 	}
+
 	if password2 == "" {
 		c.JsonResult(6002, "确认密码不能为空")
 	}
+
 	if password1 != password2 {
 		c.JsonResult(6003, "确认密码输入不正确")
 	}
+
 	if captcha == "" {
 		c.JsonResult(6004, "验证码不能为空")
 	}
+
 	v, ok := c.GetSession(conf.CaptchaSessionName).(string)
 	if !ok || !strings.EqualFold(v, captcha) {
 		c.JsonResult(6001, "验证码不正确")
 	}
 
-	mailConf := conf.GetMailConfig()
 	memberToken, err := models.NewMemberToken().FindByFieldFirst("token", token)
-
 	if err != nil {
 		beego.Error(err)
 		c.JsonResult(6007, "邮件已失效")
 	}
+
+	mailConf := conf.GetMailConfig()
 	subTime := memberToken.SendTime.Sub(time.Now())
-
 	if !strings.EqualFold(memberToken.Email, email) || subTime.Minutes() > float64(mailConf.MailExpired) || !memberToken.ValidTime.IsZero() {
-
 		c.JsonResult(6008, "验证码已过期，请重新操作。")
 	}
+
 	member, err := models.NewMember().Find(memberToken.MemberId)
 	if err != nil {
 		beego.Error(err)
 		c.JsonResult(6005, "用户不存在")
 	}
-	hash, err := utils.PasswordHash(password1)
 
+	hash, err := utils.PasswordHash(password1)
 	if err != nil {
 		beego.Error(err)
 		c.JsonResult(6006, "保存密码失败")
 	}
 
 	member.Password = hash
-
 	err = member.Update("password")
+
 	memberToken.ValidTime = time.Now()
 	memberToken.IsValid = true
 	memberToken.InsertOrUpdate()
@@ -419,6 +442,7 @@ func (c *AccountController) ValidEmail() {
 		beego.Error(err)
 		c.JsonResult(6006, "保存密码失败")
 	}
+
 	c.JsonResult(0, "ok", conf.URLFor("AccountController.Login"))
 }
 
@@ -438,7 +462,6 @@ func (c *AccountController) Captcha() {
 	c.Prepare()
 
 	captchaImage, err := gocaptcha.NewCaptchaImage(140, 40, gocaptcha.RandLightColor())
-
 	if err != nil {
 		beego.Error(err)
 		c.Abort("500")
