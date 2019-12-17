@@ -17,8 +17,8 @@ import (
 	"github.com/astaxie/beego"
 	beegoCache "github.com/astaxie/beego/cache"
 	_ "github.com/astaxie/beego/cache/memcache"
-	_ "github.com/astaxie/beego/cache/redis"
 	"github.com/astaxie/beego/cache/redis"
+	_ "github.com/astaxie/beego/cache/redis"
 	"github.com/astaxie/beego/logs"
 	"github.com/astaxie/beego/orm"
 	"github.com/howeyc/fsnotify"
@@ -106,6 +106,8 @@ func RegisterModel() {
 		new(models.TeamMember),
 		new(models.TeamRelationship),
 		new(models.Itemsets),
+		new(models.BookRecord),
+		new(models.BookPin),
 	)
 	gob.Register(models.Blog{})
 	gob.Register(models.Document{})

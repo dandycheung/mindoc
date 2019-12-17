@@ -2903,29 +2903,27 @@
         // var mark = new Array(level).fill("#").join("") + " "; // 上一条语句也可这样写，看起来简洁
         var marklen = 1 + level;
 
-        var patt1 = new RegExp("^#{1}[ ]");        // 如果存在 H1
-        var patt2 = new RegExp("^#{1,6}[ ]");      // 如果存在 H2-H6
+        var patt1 = new RegExp("^#{" + level + "}[ ]");    // 如果当前就存在 Hx
+        var patt2 = new RegExp("^#{1,6}[ ]");              // 如果当前就存在其他 Hx
 
-        if (patt1.test(selection) === true)        // 如果存在 H1，取消 H1 的设置
+        if (patt1.test(selection) === true)                // 如果当前就存在 Hx，取消之
         {
             selection = selection.replace(patt1, "");
             cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line + 1, ch: 0 });
             cm.replaceSelection(selection + "\n");
             cm.setCursor(cursor.line, cursor.ch - marklen);
+            return;
         }
-        else if(patt2.test(selection) === true)    // 如果存在 H1-H6，取消 H2-H6，并替换为 H1
+
+        if (patt2.test(selection) === true)                // 如果当前就存在其他 Hx，先取消之
         {
             selection = selection.replace(patt2, "");
-            cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line + 1, ch: 0 });
-            cm.replaceSelection("# " + selection + "\n");
-            cm.setCursor(cursor.line, cursor.ch + marklen);
         }
-        else                                       // 设置为 H1
-        {
-            cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line + 1, ch: 0 });
-            cm.replaceSelection("# " + selection + "\n");
-            cm.setCursor(cursor.line, cursor.ch + marklen);
-        }
+
+        // 再设置为 Hx
+        cm.setSelection({ line: cursor.line, ch: 0 }, { line: cursor.line + 1, ch: 0 });
+        cm.replaceSelection(mark + selection + "\n");
+        cm.setCursor(cursor.line, cursor.ch + marklen);
     };
 
     var listHandler = function (cm, ordered) {
@@ -2952,7 +2950,7 @@
         }
     };
 
-    var listxHandle = function (cm, ordered) {
+    var listxHandler = function (cm, ordered) {
         var cursor    = cm.getCursor();
         var selection = cm.getSelection();
 

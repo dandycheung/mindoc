@@ -97,7 +97,11 @@ func GetDefaultAvatar(username string) string {
 
 	unixtime := time.Now().UnixNano()
 	timeString := strconv.FormatInt(unixtime, 10)
-	avatarUri := "/static/avatar/" + timeString + ".jpg"
+
+	avatarDir := "/uploads/avatar"
+	os.MakedirAll(WorkingDirectory + avatarDir, 0755)
+
+	avatarUri := avatarDir + "/" + timeString + ".jpg"
 	avatarFile := WorkingDirectory + avatarUri
 	_ = govatar.GenerateFileForUsername(govatar.MALE, username, avatarFile)
 
