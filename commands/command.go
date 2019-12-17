@@ -163,33 +163,33 @@ func RegisterLogger(log string) {
 	if level := beego.AppConfig.DefaultString("log_level", "Trace"); level != "" {
 		switch level {
 		case "Emergency":
-			config["level"] = beego.LevelEmergency;
+			config["level"] = beego.LevelEmergency
 			break
 		case "Alert":
-			config["level"] = beego.LevelAlert;
+			config["level"] = beego.LevelAlert
 			break
 		case "Critical":
-			config["level"] = beego.LevelCritical;
+			config["level"] = beego.LevelCritical
 			break
 		case "Error":
-			config["level"] = beego.LevelError;
+			config["level"] = beego.LevelError
 			break
 		case "Warning":
-			config["level"] = beego.LevelWarning;
+			config["level"] = beego.LevelWarning
 			break
 		case "Notice":
-			config["level"] = beego.LevelNotice;
+			config["level"] = beego.LevelNotice
 			break
 		case "Informational":
-			config["level"] = beego.LevelInformational;
+			config["level"] = beego.LevelInformational
 			break
 		case "Debug":
-			config["level"] = beego.LevelDebug;
+			config["level"] = beego.LevelDebug
 			break
 		}
 	}
 
-	b, err := json.Marshal(config);
+	b, err := json.Marshal(config)
 	if err != nil {
 		beego.Error("初始化文件日志时出错 -> ", err)
 		beego.SetLogger("file", `{"filename":"` + logPath + `"}`)
