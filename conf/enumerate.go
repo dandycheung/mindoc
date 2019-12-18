@@ -99,7 +99,7 @@ func GetDefaultAvatar(username string) string {
 	timeString := strconv.FormatInt(unixtime, 10)
 
 	avatarDir := "/uploads/avatar"
-	os.MakedirAll(WorkingDirectory + avatarDir, 0755)
+	os.MkdirAll(WorkingDirectory + avatarDir, 0755)
 
 	avatarUri := avatarDir + "/" + timeString + ".jpg"
 	avatarFile := WorkingDirectory + avatarUri

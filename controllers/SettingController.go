@@ -30,14 +30,17 @@ func (c *SettingController) Index() {
 		if email == "" {
 			c.JsonResult(601, "邮箱不能为空")
 		}
+
 		member := c.Member
 		member.Email = email
 		member.Phone = phone
 		member.Description = description
-		member.RealName = strings.TrimSpace(c.GetString("real_name",""))
+		member.RealName = strings.TrimSpace(c.GetString("real_name", ""))
+
 		if err := member.Update(); err != nil {
 			c.JsonResult(602, err.Error())
 		}
+
 		c.SetMember(*member)
 		c.JsonResult(0, "ok")
 	}
@@ -50,6 +53,7 @@ func (c *SettingController) Password() {
 		if c.Member.AuthMethod == conf.AuthMethodLDAP {
 			c.JsonResult(6009, "当前用户不支持修改密码")
 		}
+
 		password1 := c.GetString("password1")
 		password2 := c.GetString("password2")
 		password3 := c.GetString("password3")
@@ -61,31 +65,39 @@ func (c *SettingController) Password() {
 		if password2 == "" {
 			c.JsonResult(6004, "新密码不能为空")
 		}
+
 		if count := strings.Count(password2, ""); count < 6 || count > 18 {
 			c.JsonResult(6009, "密码必须在6-18字之间")
 		}
+
 		if password2 != password3 {
 			c.JsonResult(6003, "确认密码不正确")
 		}
+
 		if ok, _ := utils.PasswordVerify(c.Member.Password, password1); !ok {
 			c.JsonResult(6005, "原始密码不正确")
 		}
+
 		if password1 == password2 {
 			c.JsonResult(6006, "新密码不能和原始密码相同")
 		}
+
 		pwd, err := utils.PasswordHash(password2)
 		if err != nil {
 			c.JsonResult(6007, "密码加密失败")
 		}
+
 		c.Member.Password = pwd
+
 		if err := c.Member.Update(); err != nil {
 			c.JsonResult(6008, err.Error())
 		}
+
 		c.JsonResult(0, "ok")
 	}
 }
 
-// Upload 上传图片
+// 上传图片
 func (c *SettingController) Upload() {
 	file, moreFile, err := c.GetFile("image-file")
 	defer file.Close()
@@ -114,34 +126,30 @@ func (c *SettingController) Upload() {
 	fmt.Println(x, x1, y, y1)
 
 	fileName := "avatar_" + strconv.FormatInt(time.Now().UnixNano(), 16)
-
 	filePath := filepath.Join(conf.WorkingDirectory, "uploads", time.Now().Format("200601"), fileName+ext)
 
 	path := filepath.Dir(filePath)
-
 	os.MkdirAll(path, os.ModePerm)
 
 	err = c.SaveToFile("image-file", filePath)
-
 	if err != nil {
 		logs.Error("", err)
 		c.JsonResult(500, "图片保存失败")
 	}
 
-	//剪切图片
+	// 剪切图片
 	subImg, err := graphics.ImageCopyFromFile(filePath, x, y, width, height)
-
 	if err != nil {
 		logs.Error("ImageCopyFromFile => ", err)
 		c.JsonResult(6001, "头像剪切失败")
 	}
+
 	os.Remove(filePath)
 
 	filePath = filepath.Join(conf.WorkingDirectory, "uploads", time.Now().Format("200601"), fileName+"_small"+ext)
 
 	err = graphics.ImageResizeSaveFile(subImg, 120, 120, filePath)
-	//err = graphics.SaveImage(filePath,subImg)
-
+	// err = graphics.SaveImage(filePath, subImg)
 	if err != nil {
 		logs.Error("保存文件失败 => ", err.Error())
 		c.JsonResult(500, "保存文件失败")

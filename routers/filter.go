@@ -2,12 +2,13 @@ package routers
 
 import (
 	"encoding/json"
+	"net/url"
+	"regexp"
+
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/context"
 	"github.com/lifei6671/mindoc/conf"
 	"github.com/lifei6671/mindoc/models"
-	"net/url"
-	"regexp"
 )
 
 func init() {

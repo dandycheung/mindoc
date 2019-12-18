@@ -1,14 +1,14 @@
 package filetil
 
 import (
+	"bytes"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
-	"io"
-	"fmt"
-	"math"
-	"io/ioutil"
-	"bytes"
 )
 
 //==================================
@@ -42,12 +42,14 @@ func ScanFiles(dir string) (fl []FileList, err error) {
 				ModTime: info.ModTime().Unix(),
 			})
 		}
+
 		return err
 	})
+
 	return
 }
 
-// 拷贝文件
+// 复制文件
 func CopyFile(source string, dst string) (err error) {
 	sourceFile, err := os.Open(source)
 	if err != nil {
@@ -84,7 +86,7 @@ func CopyFile(source string, dst string) (err error) {
 	return
 }
 
-// 拷贝目录
+// 复制目录
 func CopyDir(source string, dest string) (err error) {
 	// get properties of source dir
 	sourceInfo, err := os.Stat(source)
@@ -102,7 +104,7 @@ func CopyDir(source string, dest string) (err error) {
 	objects, err := directory.Readdir(-1)
 
 	for _, obj := range objects {
-		sourceFilePointer := filepath.Join(source , obj.Name())
+		sourceFilePointer := filepath.Join(source, obj.Name())
 		destinationFilePointer := filepath.Join(dest, obj.Name())
 
 		if obj.IsDir() {
@@ -119,6 +121,7 @@ func CopyDir(source string, dest string) (err error) {
 			}
 		}
 	}
+
 	return
 }
 
@@ -132,6 +135,7 @@ func AbsolutePath(p string) (string, error) {
 		if home == "" {
 			panic(fmt.Sprintf("can not found HOME in envs, '%s' AbsPh Failed!", p))
 		}
+
 		p = fmt.Sprint(home, string(p[1:]))
 	}
 
@@ -149,6 +153,7 @@ func FileExists(path string) bool {
 	if err == nil {
 		return true
 	}
+
 	if os.IsNotExist(err) {
 		return false
 	}
@@ -203,7 +208,7 @@ func Round(val float64, places int) float64 {
 }
 
 // 判断指定目录下是否存在指定后缀的文件
-func HasFileOfExt(path string,exts []string) bool {
+func HasFileOfExt(path string, exts []string) bool {
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
 			ext := filepath.Ext(info.Name())
@@ -214,6 +219,7 @@ func HasFileOfExt(path string,exts []string) bool {
 				}
 			}
 		}
+
 		return nil
 	})
 
@@ -228,21 +234,22 @@ func IsImageExt(filename string) bool {
 		strings.EqualFold(ext, ".jpeg") ||
 		strings.EqualFold(ext, ".png") ||
 		strings.EqualFold(ext, ".gif") ||
-		strings.EqualFold(ext,".svg") ||
-		strings.EqualFold(ext,".bmp") ||
-		strings.EqualFold(ext,".webp")
+		strings.EqualFold(ext, ".svg") ||
+		strings.EqualFold(ext, ".bmp") ||
+		strings.EqualFold(ext, ".webp")
 }
 
 // 忽略字符串中的 BOM 头
 func ReadFileAndIgnoreUTF8BOM(filename string) ([]byte, error) {
-
-	data,err := ioutil.ReadFile(filename)
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
+
 	if data == nil {
 		return nil, nil
 	}
+
 	data = bytes.Replace(data, []byte("\r"), []byte(""), -1)
 	if len(data) >= 3 && data[0] == 0xef && data[1] == 0xbb && data[2] == 0xbf {
 		return data[3:], err

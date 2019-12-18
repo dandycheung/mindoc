@@ -5,35 +5,35 @@ import (
 	"reflect"
 )
 
-//A list of options that can be set from code to make it easier to see which options are available
+// A list of options that can be set from code to make it easier to see which options are available
 type globalOptions struct {
-	CookieJar         stringOption //Read and write cookies from and to the supplied cookie jar file
-	Copies            uintOption   //Number of copies to print into the pdf file (default 1)
-	Dpi               uintOption   //Change the dpi explicitly (this has no effect on X11 based systems)
-	ExtendedHelp      boolOption   //Display more extensive help, detailing less common command switches
-	Grayscale         boolOption   //PDF will be generated in grayscale
-	Help              boolOption   //Display help
-	HTMLDoc           boolOption   //Output program html help
-	ImageDpi          uintOption   //When embedding images scale them down to this dpi (default 600)
-	ImageQuality      uintOption   //When jpeg compressing images use this quality (default 94)
-	License           boolOption   //Output license information and exit
-	Lowquality        boolOption   //Generates lower quality pdf/ps. Useful to shrink the result document space
-	ManPage           boolOption   //Output program man page
-	MarginBottom      uintOption   //Set the page bottom margin
-	MarginLeft        uintOption   //Set the page left margin (default 10mm)
-	MarginRight       uintOption   //Set the page right margin (default 10mm)
-	MarginTop         uintOption   //Set the page top margin
+	CookieJar         stringOption // Read and write cookies from and to the supplied cookie jar file
+	Copies            uintOption   // Number of copies to print into the pdf file (default 1)
+	Dpi               uintOption   // Change the dpi explicitly (this has no effect on X11 based systems)
+	ExtendedHelp      boolOption   // Display more extensive help, detailing less common command switches
+	Grayscale         boolOption   // PDF will be generated in grayscale
+	Help              boolOption   // Display help
+	HTMLDoc           boolOption   // Output program html help
+	ImageDpi          uintOption   // When embedding images scale them down to this dpi (default 600)
+	ImageQuality      uintOption   // When jpeg compressing images use this quality (default 94)
+	License           boolOption   // Output license information and exit
+	Lowquality        boolOption   // Generates lower quality pdf/ps. Useful to shrink the result document space
+	ManPage           boolOption   // Output program man page
+	MarginBottom      uintOption   // Set the page bottom margin
+	MarginLeft        uintOption   // Set the page left margin (default 10mm)
+	MarginRight       uintOption   // Set the page right margin (default 10mm)
+	MarginTop         uintOption   // Set the page top margin
 	Orientation       stringOption // Set orientation to Landscape or Portrait (default Portrait)
-	NoCollate         boolOption   //Do not collate when printing multiple copies (default collate)
-	PageHeight        uintOption   //Page height
-	PageSize          stringOption //Set paper size to: A4, Letter, etc. (default A4)
-	PageWidth         uintOption   //Page width
-	NoPdfCompression  boolOption   //Do not use lossless compression on pdf objects
-	Quiet             boolOption   //Be less verbose
-	ReadArgsFromStdin boolOption   //Read command line arguments from stdin
-	Readme            boolOption   //Output program readme
-	Title             stringOption //The title of the generated pdf file (The title of the first document is used if not specified)
-	Version           boolOption   //Output version information and exit
+	NoCollate         boolOption   // Do not collate when printing multiple copies (default collate)
+	PageHeight        uintOption   // Page height
+	PageSize          stringOption // Set paper size to: A4, Letter, etc. (default A4)
+	PageWidth         uintOption   // Page width
+	NoPdfCompression  boolOption   // Do not use lossless compression on pdf objects
+	Quiet             boolOption   // Be less verbose
+	ReadArgsFromStdin boolOption   // Read command line arguments from stdin
+	Readme            boolOption   // Output program readme
+	Title             stringOption // The title of the generated pdf file (The title of the first document is used if not specified)
+	Version           boolOption   // Output version information and exit
 }
 
 func (gopt *globalOptions) Args() []string {
@@ -41,10 +41,10 @@ func (gopt *globalOptions) Args() []string {
 }
 
 type outlineOptions struct {
-	DumpDefaultTocXsl boolOption   //Dump the default TOC xsl style sheet to stdout
-	DumpOutline       stringOption //Dump the outline to a file
-	NoOutline         boolOption   //Do not put an outline into the pdf
-	OutlineDepth      uintOption   //Set the depth of the outline (default 4)
+	DumpDefaultTocXsl boolOption   // Dump the default TOC xsl style sheet to stdout
+	DumpOutline       stringOption // Dump the outline to a file
+	NoOutline         boolOption   // Do not put an outline into the pdf
+	OutlineDepth      uintOption   // Set the depth of the outline (default 4)
 }
 
 func (oopt *outlineOptions) Args() []string {
@@ -52,47 +52,47 @@ func (oopt *outlineOptions) Args() []string {
 }
 
 type pageOptions struct {
-	Allow                     sliceOption  //Allow the file or files from the specified folder to be loaded (repeatable)
-	NoBackground              boolOption   //Do not print background
-	CacheDir                  stringOption //Web cache directory
-	CheckboxCheckedSvg        stringOption //Use this SVG file when rendering checked checkboxes
-	CheckboxSvg               stringOption //Use this SVG file when rendering unchecked checkboxes
-	Cookie                    mapOption    //Set an additional cookie (repeatable), value should be url encoded
-	CustomHeader              mapOption    //Set an additional HTTP header (repeatable)
-	CustomHeaderPropagation   boolOption   //Add HTTP headers specified by --custom-header for each resource request
-	NoCustomHeaderPropagation boolOption   //Do not add HTTP headers specified by --custom-header for each resource request
-	DebugJavascript           boolOption   //Show javascript debugging output
-	DefaultHeader             boolOption   //Add a default header, with the name of the page to the left, and the page number to the right, this is short for: --header-left='[webpage]' --header-right='[page]/[toPage]' --top 2cm --header-line
-	Encoding                  stringOption //Set the default text encoding, for input
-	DisableExternalLinks      boolOption   //Do not make links to remote web pages
-	EnableForms               boolOption   //Turn HTML form fields into pdf form fields
-	NoImages                  boolOption   //Do not load or print images
-	DisableInternalLinks      boolOption   //Do not make local links
-	DisableJavascript         boolOption   //Do not allow web pages to run javascript
-	JavascriptDelay           uintOption   //Wait some milliseconds for javascript finish (default 200)
-	LoadErrorHandling         stringOption //Specify how to handle pages that fail to load: abort, ignore or skip (default abort)
-	LoadMediaErrorHandling    stringOption //Specify how to handle media files that fail to load: abort, ignore or skip (default ignore)
-	DisableLocalFileAccess    boolOption   //Do not allowed conversion of a local file to read in other local files, unless explicitly allowed with --allow
-	MinimumFontSize           uintOption   //Minimum font size
-	ExcludeFromOutline        boolOption   //Do not include the page in the table of contents and outlines
-	PageOffset                uintOption   //Set the starting page number (default 0)
-	Password                  stringOption //HTTP Authentication password
-	EnablePlugins             boolOption   //Enable installed plugins (plugins will likely not work)
-	Post                      mapOption    //Add an additional post field (repeatable)
-	PostFile                  mapOption    //Post an additional file (repeatable)
-	PrintMediaType            boolOption   //Use print media-type instead of screen
-	Proxy                     stringOption //Use a proxy
-	RadiobuttonCheckedSvg     stringOption //Use this SVG file when rendering checked radiobuttons
-	RadiobuttonSvg            stringOption //Use this SVG file when rendering unchecked radiobuttons
-	RunScript                 sliceOption  //Run this additional javascript after the page is done loading (repeatable)
-	DisableSmartShrinking     boolOption   //Disable the intelligent shrinking strategy used by WebKit that makes the pixel/dpi ratio none constant
-	NoStopSlowScripts         boolOption   //Do not Stop slow running javascripts
-	EnableTocBackLinks        boolOption   //Link from section header to toc
-	UserStyleSheet            stringOption //Specify a user style sheet, to load with every page
-	Username                  stringOption //HTTP Authentication username
-	ViewportSize              stringOption //Set viewport size if you have custom scrollbars or css attribute overflow to emulate window size
-	WindowStatus              stringOption //Wait until window.status is equal to this string before rendering page
-	Zoom                      floatOption  //Use this zoom factor (default 1)
+	Allow                     sliceOption  // Allow the file or files from the specified folder to be loaded (repeatable)
+	NoBackground              boolOption   // Do not print background
+	CacheDir                  stringOption // Web cache directory
+	CheckboxCheckedSvg        stringOption // Use this SVG file when rendering checked checkboxes
+	CheckboxSvg               stringOption // Use this SVG file when rendering unchecked checkboxes
+	Cookie                    mapOption    // Set an additional cookie (repeatable), value should be url encoded
+	CustomHeader              mapOption    // Set an additional HTTP header (repeatable)
+	CustomHeaderPropagation   boolOption   // Add HTTP headers specified by --custom-header for each resource request
+	NoCustomHeaderPropagation boolOption   // Do not add HTTP headers specified by --custom-header for each resource request
+	DebugJavascript           boolOption   // Show javascript debugging output
+	DefaultHeader             boolOption   // Add a default header, with the name of the page to the left, and the page number to the right, this is short for: --header-left='[webpage]' --header-right='[page]/[toPage]' --top 2cm --header-line
+	Encoding                  stringOption // Set the default text encoding, for input
+	DisableExternalLinks      boolOption   // Do not make links to remote web pages
+	EnableForms               boolOption   // Turn HTML form fields into pdf form fields
+	NoImages                  boolOption   // Do not load or print images
+	DisableInternalLinks      boolOption   // Do not make local links
+	DisableJavascript         boolOption   // Do not allow web pages to run javascript
+	JavascriptDelay           uintOption   // Wait some milliseconds for javascript finish (default 200)
+	LoadErrorHandling         stringOption // Specify how to handle pages that fail to load: abort, ignore or skip (default abort)
+	LoadMediaErrorHandling    stringOption // Specify how to handle media files that fail to load: abort, ignore or skip (default ignore)
+	DisableLocalFileAccess    boolOption   // Do not allowed conversion of a local file to read in other local files, unless explicitly allowed with --allow
+	MinimumFontSize           uintOption   // Minimum font size
+	ExcludeFromOutline        boolOption   // Do not include the page in the table of contents and outlines
+	PageOffset                uintOption   // Set the starting page number (default 0)
+	Password                  stringOption // HTTP Authentication password
+	EnablePlugins             boolOption   // Enable installed plugins (plugins will likely not work)
+	Post                      mapOption    // Add an additional post field (repeatable)
+	PostFile                  mapOption    // Post an additional file (repeatable)
+	PrintMediaType            boolOption   // Use print media-type instead of screen
+	Proxy                     stringOption // Use a proxy
+	RadiobuttonCheckedSvg     stringOption // Use this SVG file when rendering checked radiobuttons
+	RadiobuttonSvg            stringOption // Use this SVG file when rendering unchecked radiobuttons
+	RunScript                 sliceOption  // Run this additional javascript after the page is done loading (repeatable)
+	DisableSmartShrinking     boolOption   // Disable the intelligent shrinking strategy used by WebKit that makes the pixel/dpi ratio none constant
+	NoStopSlowScripts         boolOption   // Do not Stop slow running javascripts
+	EnableTocBackLinks        boolOption   // Link from section header to toc
+	UserStyleSheet            stringOption // Specify a user style sheet, to load with every page
+	Username                  stringOption // HTTP Authentication username
+	ViewportSize              stringOption // Set viewport size if you have custom scrollbars or css attribute overflow to emulate window size
+	WindowStatus              stringOption // Wait until window.status is equal to this string before rendering page
+	Zoom                      floatOption  // Use this zoom factor (default 1)
 }
 
 func (popt *pageOptions) Args() []string {
@@ -100,23 +100,23 @@ func (popt *pageOptions) Args() []string {
 }
 
 type headerAndFooterOptions struct {
-	FooterCenter   stringOption //Centered footer text
-	FooterFontName stringOption //Set footer font name (default Arial)
-	FooterFontSize uintOption   //Set footer font size (default 12)
-	FooterHTML     stringOption //Adds a html footer
-	FooterLeft     stringOption //Left aligned footer text
-	FooterLine     boolOption   //Display line above the footer
-	FooterRight    stringOption //Right aligned footer text
-	FooterSpacing  floatOption  //Spacing between footer and content in mm (default 0)
-	HeaderCenter   stringOption //Centered header text
-	HeaderFontName stringOption //Set header font name (default Arial)
-	HeaderFontSize uintOption   //Set header font size (default 12)
-	HeaderHTML     stringOption //Adds a html header
-	HeaderLeft     stringOption //Left aligned header text
-	HeaderLine     boolOption   //Display line below the header
-	HeaderRight    stringOption //Right aligned header text
-	HeaderSpacing  floatOption  //Spacing between header and content in mm (default 0)
-	Replace        mapOption    //Replace [name] with value in header and footer (repeatable)
+	FooterCenter   stringOption // Centered footer text
+	FooterFontName stringOption // Set footer font name (default Arial)
+	FooterFontSize uintOption   // Set footer font size (default 12)
+	FooterHTML     stringOption // Adds a html footer
+	FooterLeft     stringOption // Left aligned footer text
+	FooterLine     boolOption   // Display line above the footer
+	FooterRight    stringOption // Right aligned footer text
+	FooterSpacing  floatOption  // Spacing between footer and content in mm (default 0)
+	HeaderCenter   stringOption // Centered header text
+	HeaderFontName stringOption // Set header font name (default Arial)
+	HeaderFontSize uintOption   // Set header font size (default 12)
+	HeaderHTML     stringOption // Adds a html header
+	HeaderLeft     stringOption // Left aligned header text
+	HeaderLine     boolOption   // Display line below the header
+	HeaderRight    stringOption // Right aligned header text
+	HeaderSpacing  floatOption  // Spacing between header and content in mm (default 0)
+	Replace        mapOption    // Replace [name] with value in header and footer (repeatable)
 }
 
 func (hopt *headerAndFooterOptions) Args() []string {
@@ -124,12 +124,12 @@ func (hopt *headerAndFooterOptions) Args() []string {
 }
 
 type tocOptions struct {
-	DisableDottedLines  boolOption   //Do not use dotted lines in the toc
-	TocHeaderText       stringOption //The header text of the toc (default Table of Contents)
-	TocLevelIndentation uintOption   //For each level of headings in the toc indent by this length (default 1em)
-	DisableTocLinks     boolOption   //Do not link from toc to sections
-	TocTextSizeShrink   floatOption  //For each level of headings in the toc the font is scaled by this factor
-	XslStyleSheet       stringOption //Use the supplied xsl style sheet for printing the table of content
+	DisableDottedLines  boolOption   // Do not use dotted lines in the toc
+	TocHeaderText       stringOption // The header text of the toc (default Table of Contents)
+	TocLevelIndentation uintOption   // For each level of headings in the toc indent by this length (default 1em)
+	DisableTocLinks     boolOption   // Do not link from toc to sections
+	TocTextSizeShrink   floatOption  // For each level of headings in the toc the font is scaled by this factor
+	XslStyleSheet       stringOption // Use the supplied xsl style sheet for printing the table of content
 }
 
 func (topt *tocOptions) Args() []string {
@@ -137,7 +137,7 @@ func (topt *tocOptions) Args() []string {
 }
 
 type argParser interface {
-	Parse() []string //Used in the cmd call
+	Parse() []string // Used in the cmd call
 }
 
 type stringOption struct {
@@ -150,8 +150,10 @@ func (so stringOption) Parse() []string {
 	if so.value == "" {
 		return args
 	}
+
 	args = append(args, "--"+so.option)
 	args = append(args, so.value)
+
 	return args
 }
 
@@ -169,10 +171,12 @@ func (so sliceOption) Parse() []string {
 	if len(so.value) == 0 {
 		return args
 	}
+
 	for _, v := range so.value {
 		args = append(args, "--"+so.option)
 		args = append(args, v)
 	}
+
 	return args
 }
 
@@ -190,11 +194,13 @@ func (mo mapOption) Parse() []string {
 	if mo.value == nil || len(mo.value) == 0 {
 		return args
 	}
+
 	for k, v := range mo.value {
 		args = append(args, "--"+mo.option)
 		args = append(args, k)
 		args = append(args, v)
 	}
+
 	return args
 }
 
@@ -202,6 +208,7 @@ func (mo *mapOption) Set(key, value string) {
 	if mo.value == nil {
 		mo.value = make(map[string]string)
 	}
+
 	mo.value[key] = value
 }
 
@@ -216,8 +223,10 @@ func (io uintOption) Parse() []string {
 	if io.isSet == false {
 		return args
 	}
+
 	args = append(args, "--"+io.option)
 	args = append(args, fmt.Sprintf("%d", io.value))
+
 	return args
 }
 
@@ -237,8 +246,10 @@ func (fo floatOption) Parse() []string {
 	if fo.isSet == false {
 		return args
 	}
+
 	args = append(args, "--"+fo.option)
 	args = append(args, fmt.Sprintf("%.3f", fo.value))
+
 	return args
 }
 
@@ -389,6 +400,7 @@ func optsToArgs(opts interface{}) []string {
 	if rv.Kind() != reflect.Struct {
 		return args
 	}
+
 	for i := 0; i < rv.NumField(); i++ {
 		prsr, ok := rv.Field(i).Interface().(argParser)
 		if ok {
@@ -398,6 +410,7 @@ func optsToArgs(opts interface{}) []string {
 			}
 		}
 	}
+
 	return args
 }
 

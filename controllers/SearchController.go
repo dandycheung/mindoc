@@ -1,14 +1,15 @@
 package controllers
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/astaxie/beego"
 	"github.com/lifei6671/mindoc/conf"
 	"github.com/lifei6671/mindoc/models"
 	"github.com/lifei6671/mindoc/utils"
 	"github.com/lifei6671/mindoc/utils/pagination"
 	"github.com/lifei6671/mindoc/utils/sqltil"
-	"strconv"
-	"strings"
 )
 
 type SearchController struct {
@@ -33,24 +34,27 @@ func (c *SearchController) Index() {
 
 	if keyword != "" {
 		c.Data["Keyword"] = keyword
+
 		memberId := 0
 		if c.Member != nil {
 			memberId = c.Member.MemberId
 		}
-		searchResult, totalCount, err := models.NewDocumentSearchResult().FindToPager(sqltil.EscapeLike(keyword), pageIndex, conf.PageSize, memberId)
 
+		searchResult, totalCount, err := models.NewDocumentSearchResult().FindToPager(sqltil.EscapeLike(keyword), pageIndex, conf.PageSize, memberId)
 		if err != nil {
-			beego.Error("搜索失败 ->", err)
+			beego.Error("搜索失败 -> ", err)
 			return
 		}
+
 		if totalCount > 0 {
 			pager := pagination.NewPagination(c.Ctx.Request, totalCount, conf.PageSize, c.BaseUrl())
 			c.Data["PageHtml"] = pager.HtmlPages()
 		} else {
 			c.Data["PageHtml"] = ""
 		}
+
 		if len(searchResult) > 0 {
-			keywords := strings.Split(keyword," ")
+			keywords := strings.Split(keyword, " ")
 
 			for _, item := range searchResult {
 				for _, word := range keywords {
@@ -59,7 +63,6 @@ func (c *SearchController) Index() {
 						src := item.Description
 
 						r := []rune(utils.StripTags(item.Description))
-
 						if len(r) > 100 {
 							src = string(r[:100])
 						} else {
@@ -101,6 +104,7 @@ func (c *SearchController) User() {
 		if err == models.ErrPermissionDenied {
 			c.JsonResult(403, "没有权限")
 		}
+
 		c.JsonResult(500, "项目不存在")
 	}
 

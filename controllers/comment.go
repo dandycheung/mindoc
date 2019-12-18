@@ -5,11 +5,9 @@ type CommentController struct {
 }
 
 func (c *CommentController) Lists() {
-
 }
 
 func (c *CommentController) Create() {
-
 	c.JsonResult(0, "ok")
 }
 

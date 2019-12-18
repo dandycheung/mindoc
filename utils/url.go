@@ -8,6 +8,7 @@ func JoinURI(elem ...string) string {
 	if len(elem) <= 0 {
 		return ""
 	}
+
 	uri := ""
 
 	for i, u := range elem {
@@ -23,8 +24,10 @@ func JoinURI(elem ...string) string {
 			if strings.HasPrefix(u, "/") {
 				u = string(u[1:])
 			}
+
 			uri += u
 		}
 	}
+
 	return uri
 }

@@ -20,9 +20,8 @@ const (
 	salt_local_secret   = "ahfw*&TGdsfnbi*^Wt"
 )
 
-//加密密码
+// 加密密码
 func PasswordHash(pass string) (string, error) {
-
 	saltSecret, err := salt_secret()
 	if err != nil {
 		return "", err
@@ -34,22 +33,20 @@ func PasswordHash(pass string) (string, error) {
 	}
 
 	interation := randInt(1, 20)
-
 	hash, err := hash(pass, saltSecret, salt, int64(interation))
 	if err != nil {
 		return "", err
 	}
+
 	interationString := strconv.Itoa(interation)
 	password := saltSecret + delmiter + interationString + delmiter + hash + delmiter + salt
 
 	return password, nil
-
 }
 
-//校验密码是否有效
+// 校验密码是否有效
 func PasswordVerify(hashing string, pass string) (bool, error) {
 	data := trimSaltHash(hashing)
-
 	interation, _ := strconv.ParseInt(data["interation_string"], 10, 64)
 
 	has, err := hash(pass, data["salt_secret"], data["salt"], int64(interation))
@@ -62,7 +59,6 @@ func PasswordVerify(hashing string, pass string) (bool, error) {
 	} else {
 		return false, nil
 	}
-
 }
 
 func hash(pass string, salt_secret string, salt string, interation int64) (string, error) {
@@ -81,6 +77,7 @@ func hash(pass string, salt_secret string, salt string, interation int64) (strin
 		if err != nil {
 			return "", err
 		}
+
 		hashPass = hex.EncodeToString(hashStart.Sum(nil))
 	}
 
@@ -97,13 +94,15 @@ func hash(pass string, salt_secret string, salt string, interation int64) (strin
 		if err != nil {
 			return "", err
 		}
+
 		hashPass = hex.EncodeToString(hashCenter.Sum(nil))
 	}
-	if _,err := hashOutput.Write([]byte(hashPass + salt_local_secret)); err != nil {
+
+	if _, err := hashOutput.Write([]byte(hashPass + salt_local_secret)); err != nil {
 		return "", err
 	}
-	hashPass = hex.EncodeToString(hashOutput.Sum(nil))
 
+	hashPass = hex.EncodeToString(hashOutput.Sum(nil))
 	return hashPass, nil
 }
 
@@ -117,8 +116,8 @@ func trimSaltHash(hash string) map[string]string {
 		"salt":              str[3],
 	}
 }
-func salt(secret string) (string, error) {
 
+func salt(secret string) (string, error) {
 	buf := make([]byte, saltSize, saltSize+md5.Size)
 	_, err := io.ReadFull(rand.Reader, buf)
 	if err != nil {
@@ -128,6 +127,7 @@ func salt(secret string) (string, error) {
 	hash := md5.New()
 	hash.Write(buf)
 	hash.Write([]byte(secret))
+
 	return hex.EncodeToString(hash.Sum(buf)), nil
 }
 
@@ -142,5 +142,5 @@ func salt_secret() (string, error) {
 }
 
 func randInt(min int, max int) int {
-	return min + mt.Intn(max-min)
+	return min + mt.Intn(max - min)
 }

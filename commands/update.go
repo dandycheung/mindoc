@@ -11,17 +11,16 @@ import (
 	"github.com/lifei6671/mindoc/conf"
 )
 
-//检查最新版本.
+// 检查最新版本
 func CheckUpdate() {
-
 	resp, err := http.Get("https://api.github.com/repos/lifei6671/mindoc/tags")
-
 	if err != nil {
 		beego.Error("CheckUpdate => ", err)
 		os.Exit(1)
 	}
 
 	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		beego.Error("CheckUpdate => ", err)
@@ -44,5 +43,4 @@ func CheckUpdate() {
 	}
 
 	os.Exit(0)
-
 }

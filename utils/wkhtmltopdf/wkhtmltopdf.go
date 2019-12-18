@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-var binPath string //the cached paths as used by findPath()
+var binPath string // the cached paths as used by findPath()
 
 // SetPath sets the path to wkhtmltopdf
 func SetPath(path string) {
@@ -71,7 +71,7 @@ func (pr *PageReader) Args() []string {
 	return pr.PageOptions.Args()
 }
 
-//Reader returns the io.Reader and is part of the page interface
+// Reader returns the io.Reader and is part of the page interface
 func (pr *PageReader) Reader() io.Reader {
 	return pr.Input
 }
@@ -140,31 +140,37 @@ type PDFGenerator struct {
 	pages   []page
 }
 
-//Args returns the commandline arguments as a string slice
+// Args returns the commandline arguments as a string slice
 func (pdfg *PDFGenerator) Args() []string {
 	args := []string{}
+
 	args = append(args, pdfg.globalOptions.Args()...)
 	args = append(args, pdfg.outlineOptions.Args()...)
+
 	if pdfg.Cover.Input != "" {
 		args = append(args, "cover")
 		args = append(args, pdfg.Cover.Input)
 		args = append(args, pdfg.Cover.pageOptions.Args()...)
 	}
+
 	if pdfg.TOC.Include {
 		args = append(args, "toc")
 		args = append(args, pdfg.TOC.pageOptions.Args()...)
 		args = append(args, pdfg.TOC.tocOptions.Args()...)
 	}
+
 	for _, page := range pdfg.pages {
 		args = append(args, "page")
 		args = append(args, page.InputFile())
 		args = append(args, page.Args()...)
 	}
+
 	if pdfg.OutputFile != "" {
 		args = append(args, pdfg.OutputFile)
 	} else {
 		args = append(args, "-")
 	}
+
 	return args
 }
 
@@ -200,44 +206,50 @@ func (pdfg *PDFGenerator) WriteFile(filename string) error {
 	return ioutil.WriteFile(filename, pdfg.Bytes(), 0666)
 }
 
-//findPath finds the path to wkhtmltopdf by
-//- first looking in the current dir
-//- looking in the PATH and PATHEXT environment dirs
-//- using the WKHTMLTOPDF_PATH environment dir
-//The path is cached, meaning you can not change the location of wkhtmltopdf in
-//a running program once it has been found
+// findPath finds the path to wkhtmltopdf by
+// - first looking in the current dir
+// - looking in the PATH and PATHEXT environment dirs
+// - using the WKHTMLTOPDF_PATH environment dir
+// The path is cached, meaning you can not change the location of wkhtmltopdf in
+// a running program once it has been found
 func (pdfg *PDFGenerator) findPath() error {
 	const exe = "wkhtmltopdf"
 	if binPath != "" {
 		pdfg.binPath = binPath
 		return nil
 	}
+
 	exeDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		return err
 	}
+
 	path, err := exec.LookPath(filepath.Join(exeDir, exe))
 	if err == nil && path != "" {
 		binPath = path
 		pdfg.binPath = path
 		return nil
 	}
+
 	path, err = exec.LookPath(exe)
 	if err == nil && path != "" {
 		binPath = path
 		pdfg.binPath = path
 		return nil
 	}
+
 	dir := os.Getenv("WKHTMLTOPDF_PATH")
 	if dir == "" {
 		return fmt.Errorf("%s not found", exe)
 	}
+
 	path, err = exec.LookPath(filepath.Join(dir, exe))
 	if err == nil && path != "" {
 		binPath = path
 		pdfg.binPath = path
 		return nil
 	}
+
 	return fmt.Errorf("%s not found", exe)
 }
 
@@ -247,14 +259,14 @@ func (pdfg *PDFGenerator) Create() error {
 }
 
 func (pdfg *PDFGenerator) run() error {
-
 	errbuf := &bytes.Buffer{}
 
 	cmd := exec.Command(pdfg.binPath, pdfg.Args()...)
 
 	cmd.Stdout = &pdfg.outbuf
 	cmd.Stderr = errbuf
-	//if there is a pageReader page (from Stdin) we set Stdin to that reader
+
+	// if there is a pageReader page (from Stdin) we set Stdin to that reader
 	for _, page := range pdfg.pages {
 		if page.Reader() != nil {
 			cmd.Stdin = page.Reader()
@@ -268,8 +280,10 @@ func (pdfg *PDFGenerator) run() error {
 		if strings.TrimSpace(errStr) == "" {
 			errStr = err.Error()
 		}
+
 		return errors.New(errStr)
 	}
+
 	return nil
 }
 
@@ -289,6 +303,7 @@ func NewPDFGenerator() (*PDFGenerator, error) {
 			},
 		},
 	}
+
 	err := pdfg.findPath()
 	return pdfg, err
 }
