@@ -78,7 +78,11 @@ func (c *AccountController) Login() {
 			u = conf.URLFor("HomeController.Index")
 		}
 
-		c.Redirect(u, 302)
+		if c.Ctx.Input.IsPost() {
+			c.JsonResult(0, "ok", c.referer())
+		} else {
+			c.Redirect(u, 302)
+		}
 	}
 
 	var remember CookieRemember

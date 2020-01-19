@@ -62,7 +62,7 @@
             <div class="item-head">
                 <strong class="title">最近使用</strong>
                 <span style="margin-left:15px;">
-                    <input id="onlyPin"  {{if .indexOnlyChecked }} checked {{end}}  data-size="mini" type="checkbox">
+                    <input id="onlyPin" {{if .indexOnlyChecked}} checked {{end}} data-size="mini" type="checkbox">
                     只显示 Pin
                 </span>
             </div>
@@ -70,10 +70,10 @@
 
                 <span id="pin-lists">
                 {{range $index,$item := .PinLists}}
-                    <div class="list-item pin-tag" id="pin_{{ $item.Identify }}" >
+                    <div class="list-item pin-tag" id="pin_{{$item.Identify}}" >
                         <dl class="manual-item-standard">
                             <dt style="position:relative;">
-                                <div title="unpin" onclick="unpin('{{ $item.Identify }}')" style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:60px;height:30px;color:#f0ad4e;">
+                                <div title="unpin" onclick="unpin('{{$item.Identify}}')" style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:60px;height:30px;color:#f0ad4e;">
                                     <i class="fa fa-map-pin"></i>
                                 </div>
                                 <a href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" title="{{$item.BookName}}" target="_blank">
@@ -88,9 +88,9 @@
                 {{end}}
                 </span>
 
-                <span id="record-lists"  {{if .indexOnlyChecked }} style="display:none;" {{end}} >
+                <span id="record-lists"  {{if .indexOnlyChecked}} style="display:none;" {{end}}>
                 {{range $index,$item := .RecordLists}}
-                    <div class="list-item record-tag" id="record_{{ $item.Identify }}" >
+                    <div class="list-item record-tag" id="record_{{$item.Identify}}">
                         <dl class="manual-item-standard">
                             <dt>
                                 <a href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" title="{{$item.BookName}}" target="_blank">
@@ -111,25 +111,25 @@
 
         <div class="row" style="margin-top:20px;"></div>
 
-        {{range $index,$itemData := .itemDatas}}
+        {{range $index, $itemData := .itemDatas}}
         <div class="row" >
             <div class="item-head">
-                <strong class="title">{{ $itemData.Item.ItemName }}</strong>
+                <strong class="title">{{$itemData.Item.ItemName}}</strong>
             </div>
-            <div class="manual-list" id="ItemContent_{{ $itemData.Item.ItemId }}" >
+            <div class="manual-list" id="ItemContent_{{$itemData.Item.ItemId}}" >
                 {{range $index,$item := $itemData.Books}}
-                    <div class="list-item" id="item_{{ $item.Identify }}">
+                    <div class="list-item" id="item_{{$item.Identify}}">
                         <dl class="manual-item-standard">
-                            <dt style="position:relative;" >
-                                <div title="pin" id="item_pin_{{ $item.Identify }}" onclick="pin('{{ $item.Identify }}')"  style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:50px;height:30px;color:#f0ad4e;">
+                            <dt style="position:relative;">
+                                <div title="pin" id="item_pin_{{$item.Identify}}" onclick="pin('{{$item.Identify}}')"  style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:50px;height:30px;color:#f0ad4e;">
                                     <i class="fa fa-map-pin"></i>
                                 </div>
                                 <a href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" title="{{$item.BookName}}-{{$item.CreateName}}" target="_blank">
-                                    <img id="item_img_{{ $item.Identify }}" src="{{cdnimg $item.Cover}}" class="cover" alt="{{$item.BookName}}-{{$item.CreateName}}" onerror="this.src='{{cdnimg "static/images/book.jpg"}}';">
+                                    <img id="item_img_{{$item.Identify}}" src="{{cdnimg $item.Cover}}" class="cover" alt="{{$item.BookName}}-{{$item.CreateName}}" onerror="this.src='{{cdnimg "static/images/book.jpg"}}';">
                                 </a>
                             </dt>
                             <dd>
-                                <a id="item_a_{{ $item.Identify }}" href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" class="name" title="{{$item.BookName}}-{{$item.CreateName}}" target="_blank">{{$item.BookName}}</a>
+                                <a id="item_a_{{$item.Identify}}" href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" class="name" title="{{$item.BookName}}-{{$item.CreateName}}" target="_blank">{{$item.BookName}}</a>
                             </dd>
                             <dd>
                             <span class="author">
@@ -146,19 +146,19 @@
                 <div class="clearfix"></div>
             </div>
             
-            {{if gt $itemData.TotalPages 1 }}
+            {{if gt $itemData.TotalPages 1}}
             <nav class="pagination-container">
                 <ul class="pagination">
                     <li>
-                        <a href="javascript:getItemBook({{$itemData.Item.ItemId}},1)">首页</a>
+                        <a href="javascript:getItemBook({{$itemData.Item.ItemId}}, 1)">首页</a>
                     </li>
                     {{range $index2,$page := $itemData.Pages}}
-                    <li id="page_{{$itemData.Item.ItemId}}_{{$page}}" class="page_{{$itemData.Item.ItemId}} {{if eq $page 1 }}active{{end}}">
-                        <a href="javascript:getItemBook({{$itemData.Item.ItemId}},{{$page}})">{{$page}}</a>
+                    <li id="page_{{$itemData.Item.ItemId}}_{{$page}}" class="page_{{$itemData.Item.ItemId}} {{if eq $page 1}}active{{end}}">
+                        <a href="javascript:getItemBook({{$itemData.Item.ItemId}}, {{$page}})">{{$page}}</a>
                     </li>
                     {{end}}
                     <li>
-                        <a href="javascript:getItemBook({{$itemData.Item.ItemId}},{{$itemData.TotalPages}})">末页</a>
+                        <a href="javascript:getItemBook({{$itemData.Item.ItemId}}, {{$itemData.TotalPages}})">末页</a>
                     </li>
                 </ul>
                 <div class="clearfix"></div>
@@ -175,7 +175,7 @@
 <script src="{{cdnjs "/static/layer/layer.js"}}" type="text/javascript"></script>
 {{.Scripts}}
 <script>
-    var memberId = "{{ .memberId }}";
+    var memberId = "{{.memberId}}";
 
     $("#onlyPin").bootstrapSwitch({
         onSwitchChange: function (event, state) {
@@ -210,7 +210,7 @@
         var bookName = $("#item_a_" + identify).html();
         var imgSrc = $("#item_img_" + identify).attr("src");
 
-        var pinListItemHtml = '<div class="list-item" id="pin_' + identify + '" >';
+        var pinListItemHtml = '<div class="list-item" id="pin_' + identify + '">';
             pinListItemHtml += '<dl class="manual-item-standard">';
             pinListItemHtml += '<dt style="position:relative;">';
             pinListItemHtml += '<div onclick="unpin(\'' + identify + '\')"  style="cursor:pointer;position: absolute;z-index:100;width:60px;height:30px;color:#f0ad4e;">&nbsp;&nbsp;<i class="fa fa-map-pin"></i></div>';
@@ -277,8 +277,8 @@
         var arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
 
         if(arr = document.cookie.match(reg))
-
             return unescape(arr[2]);
+
         return null;
     }
 
@@ -289,7 +289,7 @@
 
         var cval = getCookie(name);
         if(cval != null)
-            document.cookie= name + "="+cval+";expires="+exp.toGMTString();
+            document.cookie= name + "=" + cval + ";expires=" + exp.toGMTString();
     }
 </script>
 </body>

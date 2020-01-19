@@ -118,7 +118,7 @@ func GetDefaultCover() string {
 	return URLForWithCdnImage(beego.AppConfig.DefaultString("cover", "/static/images/book.jpg"))
 }
 
-// 获取允许的商城文件的类型
+// 获取允许的上传文件的类型
 func GetUploadFileExt() []string {
 	ext := beego.AppConfig.DefaultString("upload_file_ext", "png|jpg|jpeg|gif|txt|doc|docx|pdf")
 

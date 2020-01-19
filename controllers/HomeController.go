@@ -4,6 +4,7 @@ import (
 	"math"
 	"net/url"
 	"sort"
+	"strconv"
 
 	"github.com/astaxie/beego"
 	"github.com/lifei6671/mindoc/conf"
@@ -123,6 +124,7 @@ func (c *HomeController) Index() {
 		}
 	})
 
+	c.Data["memberId"] = memberId
 	c.Data["PinLists"] = pinBooks
 	c.Data["RecordLists"] = recordBooks
 	if len(pinBooks) > 0 || len(recordBooks) > 0 {
@@ -149,4 +151,13 @@ func (c *HomeController) Index() {
 	}
 
 	c.Data["itemDatas"] = itemDatas
+
+	cookieKey := "indexOnlyPin_" + strconv.Itoa(memberId)
+	indexOnlyPin := c.Ctx.GetCookie(cookieKey)
+
+	if len(indexOnlyPin) > 0 {
+		c.Data["indexOnlyChecked"] = true
+	} else {
+		c.Data["indexOnlyChecked"] = false
+	}
 }
