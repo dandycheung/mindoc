@@ -45,15 +45,14 @@ func AutoSummary(body string, l int) string {
 
 	content := ""
 	for _, s := range contents {
-		b := strings.Replace(StripTags(s), "\n", "", -1)
-
 		if l <= 0 {
 			break
 		}
 
-		l = l - len([]rune(b))
-
+		b := strings.Replace(StripTags(s), "\n", "", -1)
 		content += b
+
+		l -= len([]rune(b))
 	}
 
 	return content

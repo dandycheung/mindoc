@@ -25,22 +25,29 @@ func Unzip(zipFile, dest string) (err error) {
 
 	// 迭代压缩文件中的文件，打印出文件中的内容
 	for _, f := range r.File {
-		if !f.FileInfo().IsDir() { // 非目录，且不包含 __MACOSX
-			if folder := dest + filepath.Dir(f.Name); !strings.Contains(folder, "__MACOSX") {
-				os.MkdirAll(folder, 0777)
-				if fcreate, err := os.Create(dest + strings.TrimPrefix(f.Name, "./")); err == nil {
-					if rc, err := f.Open(); err == nil {
-						io.Copy(fcreate, rc)
-						rc.Close() // 不要用 defer 来关闭，如果文件太多的话，会报 too many open files 的错误
-						fcreate.Close()
-					} else {
-						fcreate.Close()
-						return err
-					}
-				} else {
-					return err
-				}
+		if f.FileInfo().IsDir() {
+			continue
+		}
+
+		// 排除 __MACOSX
+		if folder := dest + filepath.Dir(f.Name); !strings.Contains(folder, "__MACOSX") {
+			os.MkdirAll(folder, 0777)
+
+			fcreate, err := os.Create(dest + strings.TrimPrefix(f.Name, "./"))
+			if err != nil {
+				return err
 			}
+
+			rc, err := f.Open()
+			if err != nil {
+				fcreate.Close()
+				return err
+			}
+
+			io.Copy(fcreate, rc)
+
+			rc.Close() // 及时关闭，否则文件太多的话，会报 too many open files 的错误
+			fcreate.Close()
 		}
 	}
 
