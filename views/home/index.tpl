@@ -12,12 +12,46 @@
     <meta name="description" content="MinDoc文档在线管理系统 {{.site_description}}">
     <!-- Bootstrap -->
     <link href="{{cdncss "/static/bootstrap/css/bootstrap.min.css"}}" rel="stylesheet">
-    <link href="{{cdncss "/static/bootstrap/plugins/bootstrap-switch/css/bootstrap3//bootstrap-switch.min.css"}}" rel="stylesheet">
     <link href="{{cdncss "/static/font-awesome/css/font-awesome.min.css"}}" rel="stylesheet">
     <link href="{{cdncss "/static/css/main.css" "version"}}" rel="stylesheet">
 
 </head>
 <body>
+<style>
+.su-label {
+  margin: 20px 20px 0 0;
+  padding-left: 6px;
+  display: inline-block
+}
+.su-radio {
+  display: none
+}
+.su-radioInput {
+  background-color: #fff;
+  border:1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 100%;
+  display: inline-block;
+  height: 18px;
+  margin-right: 5px;
+  margin-top: -1px;
+  vertical-align: middle;
+  width: 18px;
+  line-height: 1
+}
+.su-radio:checked + .su-radioInput:after {
+  background-color: #57ad68;
+  border-radius: 100%;
+  content: "";
+  display: inline-block;
+  height: 12px;
+  margin: 2px;
+  width: 12px
+}
+.su-checkbox.su-radioInput,.su-radio:checked + .su-checkbox.su-radioInput:after {
+  border-radius: 0
+}
+</style>
+
 <div class="manual-reader manual-container">
     {{template "widgets/header.tpl" .}}
     <div class="container manual-body">
@@ -61,10 +95,10 @@
         <div class="row" style="margin-top:20px;">
             <div class="item-head">
                 <strong class="title">快速访问</strong>
-                <span style="margin-left:15px;">
-                    <input id="onlyPin" {{if .indexOnlyChecked}} checked {{end}} data-size="mini" type="checkbox">
-                    只显示置顶项
-                </span>
+                <label class="su-label">
+                  <input class="su-radio" type="checkbox" id="onlyPin" {{if .indexOnlyChecked}}checked{{end}} onclick="toggleOnlyPin()">
+                  <span class="su-checkbox su-radioInput"></span>仅显示置顶项
+                </label>
             </div>
             <div class="manual-list">
 
@@ -171,23 +205,10 @@
 </div>
 <script src="{{cdnjs "/static/jquery/1.12.4/jquery.min.js"}}" type="text/javascript"></script>
 <script src="{{cdnjs "/static/bootstrap/js/bootstrap.min.js"}}" type="text/javascript"></script>
-<script src="{{cdnjs "/static/bootstrap/plugins/bootstrap-switch/js/bootstrap-switch.min.js"}}" type="text/javascript"></script>
 <script src="{{cdnjs "/static/layer/layer.js"}}" type="text/javascript"></script>
 {{.Scripts}}
 <script>
     var memberId = "{{.memberId}}";
-
-    $("#onlyPin").bootstrapSwitch({
-        onSwitchChange: function (event, state) {
-            if(state) {
-                setCookie("indexOnlyPin_" + memberId, memberId, 1500);
-                $("#record-lists").hide(); 
-            } else {
-                delCookie("indexOnlyPin_" + memberId);
-                $("#record-lists").show();
-            }
-        }
-    });
 
     $(".pin-tag").each(function() {
         var pinId = $(this).attr('id');
