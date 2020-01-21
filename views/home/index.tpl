@@ -60,10 +60,10 @@
 
         <div class="row" style="margin-top:20px;">
             <div class="item-head">
-                <strong class="title">最近使用</strong>
+                <strong class="title">快速访问</strong>
                 <span style="margin-left:15px;">
                     <input id="onlyPin" {{if .indexOnlyChecked}} checked {{end}} data-size="mini" type="checkbox">
-                    只显示 Pin
+                    只显示置顶项
                 </span>
             </div>
             <div class="manual-list">
@@ -73,7 +73,7 @@
                     <div class="list-item pin-tag" id="pin_{{$item.Identify}}" >
                         <dl class="manual-item-standard">
                             <dt style="position:relative;">
-                                <div title="unpin" onclick="unpin('{{$item.Identify}}')" style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:60px;height:30px;color:#f0ad4e;">
+                                <div title="取消置顶" onclick="unpin('{{$item.Identify}}')" style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:60px;height:30px;color:#f0ad4e;">
                                     <i class="fa fa-map-pin"></i>
                                 </div>
                                 <a href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" title="{{$item.BookName}}" target="_blank">
@@ -81,7 +81,7 @@
                                 </a>
                             </dt>
                             <dd>
-                                <a href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" class="name" title="{{$item.BookName}}" target="_blank">Pin-{{$item.BookName}}</a>
+                                <a href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" class="name" title="{{$item.BookName}}" target="_blank"><strong>{{$item.BookName}}</strong></a>
                             </dd>
                         </dl>
                     </div>
@@ -121,7 +121,7 @@
                     <div class="list-item" id="item_{{$item.Identify}}">
                         <dl class="manual-item-standard">
                             <dt style="position:relative;">
-                                <div title="pin" id="item_pin_{{$item.Identify}}" onclick="pin('{{$item.Identify}}')"  style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:50px;height:30px;color:#f0ad4e;">
+                                <div title="置顶" id="item_pin_{{$item.Identify}}" onclick="pin('{{$item.Identify}}')"  style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:50px;height:30px;color:#f0ad4e;">
                                     <i class="fa fa-map-pin"></i>
                                 </div>
                                 <a href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" title="{{$item.BookName}}-{{$item.CreateName}}" target="_blank">
@@ -216,7 +216,7 @@
             pinListItemHtml += '<div onclick="unpin(\'' + identify + '\')"  style="cursor:pointer;position: absolute;z-index:100;width:60px;height:30px;color:#f0ad4e;">&nbsp;&nbsp;<i class="fa fa-map-pin"></i></div>';
             pinListItemHtml += '<a href="' + href + '" title="' + bookName + '" target="_blank"><img src="' + imgSrc + '" class="cover" alt="' + bookName + '" onerror="this.src=\'{{cdnimg "static/images/book.jpg"}}\';"></a>';
             pinListItemHtml += '</dt>';
-            pinListItemHtml += '<dd><a href="' + href + '" class="name" title="' + bookName + '" target="_blank">Pin-' + bookName + '</a></dd>';
+            pinListItemHtml += '<dd><a href="' + href + '" class="name" title="' + bookName + '" target="_blank"><strong>' + bookName + '</strong></a></dd>';
             pinListItemHtml += '</dl></div>';
 
         $.ajax({
