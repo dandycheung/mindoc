@@ -108,7 +108,7 @@
                         <dl class="manual-item-standard">
                             <dt style="position:relative;">
                                 <div title="取消置顶" onclick="unpin('{{$item.Identify}}')" style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:60px;height:30px;color:#f0ad4e;">
-                                    <i class="fa fa-map-pin"></i>
+                                    <i class="fa fa-heart"></i>
                                 </div>
                                 <a href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" title="{{$item.BookName}}" target="_blank">
                                     <img src="{{cdnimg $item.Cover}}" class="cover" alt="{{$item.BookName}}" onerror="this.src='{{cdnimg "static/images/book.jpg"}}';">
@@ -156,7 +156,7 @@
                         <dl class="manual-item-standard">
                             <dt style="position:relative;">
                                 <div title="置顶" id="item_pin_{{$item.Identify}}" onclick="pin('{{$item.Identify}}')"  style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:50px;height:30px;color:#f0ad4e;">
-                                    <i class="fa fa-map-pin"></i>
+                                    <i class="fa fa-heart-o"></i>
                                 </div>
                                 <a href="{{urlfor "DocumentController.Index" ":key" $item.Identify}}" title="{{$item.BookName}}-{{$item.CreateName}}" target="_blank">
                                     <img id="item_img_{{$item.Identify}}" src="{{cdnimg $item.Cover}}" class="cover" alt="{{$item.BookName}}-{{$item.CreateName}}" onerror="this.src='{{cdnimg "static/images/book.jpg"}}';">
@@ -234,7 +234,7 @@
         var pinListItemHtml = '<div class="list-item" id="pin_' + identify + '">';
             pinListItemHtml += '<dl class="manual-item-standard">';
             pinListItemHtml += '<dt style="position:relative;">';
-            pinListItemHtml += '<div onclick="unpin(\'' + identify + '\')"  style="cursor:pointer;position: absolute;z-index:100;width:60px;height:30px;color:#f0ad4e;">&nbsp;&nbsp;<i class="fa fa-map-pin"></i></div>';
+            pinListItemHtml += '<div title="取消置顶" onclick="unpin(\'' + identify + '\')"  style="cursor:pointer;position:absolute;top:5px;left:10px;z-index:100;width:60px;height:30px;color:#f0ad4e;"><i class="fa fa-heart"></i></div>';
             pinListItemHtml += '<a href="' + href + '" title="' + bookName + '" target="_blank"><img src="' + imgSrc + '" class="cover" alt="' + bookName + '" onerror="this.src=\'{{cdnimg "static/images/book.jpg"}}\';"></a>';
             pinListItemHtml += '</dt>';
             pinListItemHtml += '<dd><a href="' + href + '" class="name" title="' + bookName + '" target="_blank"><strong>' + bookName + '</strong></a></dd>';
