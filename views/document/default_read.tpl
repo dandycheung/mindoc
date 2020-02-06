@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-
     <title>{{.Title}} - Powered by MinDoc</title>
 
     <meta charset="utf-8">
@@ -50,8 +49,8 @@
                 {{if eq .Model.RoleId 0 1 2}}
                 <div class="dropdown pull-right">
                     {{if eq .Model.RoleId 0 1}}
-                    <a href="{{urlfor "BookController.Users" ":key" .Model.Identify}}" class="btn btn-success"><i class="fa fa-user" aria-hidden="true"></i> 成员</a>
-                    <a href="{{urlfor "BookController.Setting" ":key" .Model.Identify}}" class="btn btn-primary"><i class="fa fa-gear" aria-hidden="true"></i> 设置</a>
+                    <a href="{{urlfor "BookController.Users" ":key" .Model.Identify}}" class="btn btn-primary" title="成员"><i class="fa fa-user" aria-hidden="true"></i></a>
+                    <a href="{{urlfor "BookController.Setting" ":key" .Model.Identify}}" class="btn btn-primary" title="设置"><i class="fa fa-gear" aria-hidden="true"></i></a>
                     {{end}}
                 </div>
                 {{end}}
@@ -60,7 +59,7 @@
                 {{if eq .Model.PrivatelyOwned 0}}
                 {{if .Model.IsEnableShare}}
                     <div class="dropdown pull-right" style="margin-right: 10px;">
-                        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#shareProject"><i class="fa fa-share-square" aria-hidden="true"></i> 分享</button>
+                        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#shareProject" title="分享"><i class="fa fa-share-alt" aria-hidden="true"></i></button>
                     </div>
                 {{end}}
                 {{end}}
@@ -97,6 +96,7 @@
                 {{if eq .Model.RoleId 0 1 2}}
                 <div class="dropdown pull-right" style="margin-right: 10px;" >
                     <a href="{{urlfor "DocumentController.Edit" ":key" .Model.Identify ":id" ""}}" class="btn btn-warning"><i class="fa fa-edit" aria-hidden="true"></i> 编辑</a>
+                    <a href="javascript:window.documentHistory();" class="btn btn-default"><i class="fa fa-history" aria-hidden="true"></i> 历史</a>
                 </div>
                 {{end}}
                 {{end}}
@@ -312,6 +312,30 @@ $(function () {
         });
     });
 });
+
+window.documentHistory = function () {
+    window.historyURL = "{{urlfor "DocumentController.History"}}";
+
+    var currentLi = $('li[aria-selected="true"]')[0]
+    if (!currentLi) {
+        layer.msg("请先选中一篇文章，以查看其编辑历史。");
+        return;
+    }
+
+    // var key = "{{ .Model.Identify }}";
+    var docId = $(currentLi).attr("id");
+
+    layer.open({
+        type: 2,
+        title: '历史版本',
+        shadeClose: true,
+        shade: 0.8,
+        area: ['700px', '80%'],
+        content: window.historyURL + "?identify=" + window.book.identify + "&doc_id=" + docId,
+        end: function () {
+        }
+    });
+};
 
 function exportDoc(type)
 {

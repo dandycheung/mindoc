@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-cn">
 <head>
@@ -46,6 +45,7 @@
                 <td>{{$item.ModifyName}}</td>
                 <td>{{$item.Version}}</td>
                 <td>
+                {{if eq $.Mode "edit"}}
                     <button class="btn btn-danger btn-sm delete-btn" data-id="{{$item.HistoryId}}" data-loading-text="删除中...">
                         删除
                     </button>
@@ -57,6 +57,17 @@
                         合并
                     </button>
                     {{end}}
+                {{else}}
+                    {{if eq $.Model.Editor "markdown"}}
+                    <button class="btn btn-success btn-sm compare-btn" data-id="{{$item.HistoryId}}">
+                        查看
+                    </button>
+                    {{else}}
+                    <button class="btn btn-default disabled btn-sm">
+                        无可用操作
+                    </button>
+                    {{end}}
+                {{end}}
                 </td>
             </tr>
             {{else}}
@@ -73,79 +84,86 @@
 </div>
 <!-- Include all compiled plugins (below), or include individual files as needed -->
 <script src="{{cdnjs "/static/bootstrap/js/bootstrap.min.js"}}"></script>
-<script src="{{cdnjs "/static/layer/layer.js"}}" type="text/javascript" ></script>
+<script src="{{cdnjs "/static/layer/layer.js"}}" type="text/javascript"></script>
 <script type="text/javascript">
-    $(function () {
-        $(".delete-btn").on("click",function () {
-            var id = $(this).attr('data-id');
-            var $btn = $(this).button('loading');
-            var $then = $(this);
+$(function () {
+    $(".delete-btn").on("click", function () {
+        var id = $(this).attr('data-id');
+        var $btn = $(this).button('loading');
+        var $then = $(this);
 
-            if(!id){
-                layer.msg('参数错误');
-            }else{
-                $.ajax({
-                    url : "{{urlfor "DocumentController.DeleteHistory"}}",
-                    type : "post",
-                    dataType : "json",
-                    data : { "identify" : "{{.Model.Identify}}","doc_id" : "{{.Document.DocumentId}}" ,"history_id" : id },
-                    success :function (res) {
-                        if(res.errcode === 0){
-                            $then.parents('tr').remove().empty();
-                        }else{
-                            layer.msg(res.message);
-                        }
-                    },
-                    error : function () {
-                        $btn.button('reset');
+        if (!id) {
+            layer.msg('参数错误');
+        } else {
+            $.ajax({
+                url: "{{urlfor "DocumentController.DeleteHistory"}}",
+                type: "post",
+                dataType: "json",
+                data: { "identify": "{{.Model.Identify}}", "doc_id": "{{.Document.DocumentId}}", "history_id": id },
+                success: function (res) {
+                    if (res.errcode === 0) {
+                        $then.parents('tr').remove().empty();
+                    } else {
+                        layer.msg(res.message);
                     }
-                })
-            }
-        });
-
-        $(".restore-btn").on("click",function () {
-            var id = $(this).attr('data-id');
-            var $btn = $(this).button('loading');
-            var $then = $(this);
-            var index = parent.layer.getFrameIndex(window.name);
-
-            if(!id){
-                layer.msg('参数错误');
-            }else{
-                $.ajax({
-                    url : "{{urlfor "DocumentController.RestoreHistory"}}",
-                    type : "post",
-                    dataType : "json",
-                    data : { "identify" : "{{.Model.Identify}}","doc_id" : "{{.Document.DocumentId}}" ,"history_id" : id },
-                    success :function (res) {
-                        if(res.errcode === 0){
-                            var $node = { "node" : { "id" : res.data.doc_id}};
-
-                            parent.loadDocument($node);
-                            parent.layer.close(index);
-                        }else{
-                            layer.msg(res.message);
-                        }
-                    },
-                    error : function () {
-                        $btn.button('reset');
-                    }
-                })
-            }
-        });
-        $(".compare-btn").on("click",function () {
-            var historyId = $(this).attr("data-id");
-
-            window.compareIndex = window.top.layer.open({
-                type: 2,
-                title: '文档比较【左侧为历史文档，右侧为当前文档，请将文档合并到右侧】',
-                shade: 0.8,
-                area: ['380px', '90%'],
-                content: "{{urlfor "DocumentController.Compare" ":key" .Model.Identify ":id" ""}}" + historyId
-            });
-            window.top.layer.full(window.compareIndex);
-        });
+                },
+                error: function () {
+                    $btn.button('reset');
+                }
+            })
+        }
     });
+
+    $(".restore-btn").on("click", function () {
+        var id = $(this).attr('data-id');
+        var $btn = $(this).button('loading');
+        var $then = $(this);
+        var index = parent.layer.getFrameIndex(window.name);
+
+        if (!id) {
+            layer.msg('参数错误');
+        } else {
+            $.ajax({
+                url: "{{urlfor "DocumentController.RestoreHistory"}}",
+                type: "post",
+                dataType: "json",
+                data: { "identify": "{{.Model.Identify}}", "doc_id": "{{.Document.DocumentId}}", "history_id": id },
+                success: function (res) {
+                    if (res.errcode === 0) {
+                        var $node = { "node": { "id": res.data.doc_id } };
+
+                        parent.loadDocument($node);
+                        parent.layer.close(index);
+                    } else {
+                        layer.msg(res.message);
+                    }
+                },
+                error: function () {
+                    $btn.button('reset');
+                }
+            })
+        }
+    });
+
+    $(".compare-btn").on("click", function () {
+        {{if eq $.Mode "edit"}}
+        var text = '文档比较【左侧为历史文档，右侧为当前文档，请将文档合并到右侧】';
+        {{else}}
+        var text = '文档历史【左侧为历史文档，右侧为当前文档】';
+        {{end}}
+
+        var historyId = $(this).attr("data-id");
+
+        window.compareIndex = window.top.layer.open({
+            type: 2,
+            title: text,
+            shade: 0.8,
+            area: ['380px', '90%'],
+            content: "{{urlfor "DocumentController.Compare" ":key" .Model.Identify ":id" ""}}" + historyId + "?mode=" + {{$.Mode}}
+        });
+        window.top.layer.full(window.compareIndex);
+    });
+});
 </script>
 </body>
 </html>

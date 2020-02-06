@@ -302,7 +302,7 @@ window.documentHistory = function () {
         shadeClose: true,
         shade: 0.8,
         area: ['700px', '80%'],
-        content: window.historyURL + "?identify=" + window.book.identify + "&doc_id=" + window.selectNode.id,
+        content: window.historyURL + "?identify=" + window.book.identify + "&doc_id=" + window.selectNode.id + "&mode=edit",
         end: function () {
             if (window.SelectedId) {
                 var selected = {

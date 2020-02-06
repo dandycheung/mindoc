@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,16 +25,21 @@
        // var isSample = key === 'usaindep';
     </script>
 </head>
+
 <body style="visibility:hidden">
 <!-- toolbar -->
 <ul id="toolbar">
+    {{if eq $.Mode "edit"}}
     <li id="tb-file-save" data-icon="icon-save" title="保存">保存合并</li>
     <li class="separator"></li>
+    {{end}}
     <li id="tb-view-change-prev" data-icon="icon-arrow-up" title="上一处差异">上一处差异</li>
     <li id="tb-view-change-next" data-icon="icon-arrow-down" title="下一处差异">下一处差异</li>
+    {{if eq $.Mode "edit"}}
     <li class="separator"></li>
     <li id="tb-edit-right-merge-left" data-icon="icon-arrow-left-v" title="合并到左侧">合并到左侧</li>
     <li id="tb-edit-left-merge-right" data-icon="icon-arrow-right-v" title="合并到右侧">合并到右侧</li>
+    {{end}}
     <li id="tb-view-swap" data-icon="icon-swap" title="左右切换">左右切换</li>
 </ul>
 
@@ -53,6 +57,5 @@
 <template id="historyContent">{{.HistoryContent}}</template>
 <template id="documentContent">{{.Content}}</template>
 <script type="text/javascript" src="{{cdnjs "/static/layer/layer.js"}}"></script>
-
 </body>
 </html>
