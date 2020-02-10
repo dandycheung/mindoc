@@ -26,8 +26,8 @@
         <div class="row">
             <div class="page-left">
                 <ul class="menu">
-                    <li><a href="{{urlfor "SettingController.Index"}}" class="item"><i class="fa fa-sitemap" aria-hidden="true"></i> 基本信息</a> </li>
-                    <li class="active"><a href="{{urlfor "SettingController.Password"}}" class="item"><i class="fa fa-user" aria-hidden="true"></i> 修改密码</a> </li>
+                    <li><a href="{{urlfor "SettingController.Index"}}" class="item"><i class="item-icon fa fa-sitemap" aria-hidden="true"></i> 基本信息</a> </li>
+                    <li class="active"><a href="{{urlfor "SettingController.Password"}}" class="item"><i class="item-icon fa fa-user" aria-hidden="true"></i> 修改密码</a> </li>
                 </ul>
             </div>
             <div class="page-right">
