@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
     <meta name="renderer" content="webkit" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="SmartWiki" />
+    <meta name="author" content="MinDoc" />
     <title>历史版本 - Powered by MinDoc</title>
 
     <!-- Bootstrap -->
