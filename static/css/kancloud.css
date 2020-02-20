@@ -148,6 +148,7 @@ table>tbody>tr:hover{
 .m-manual .manual-tab .tab-util {
     position: absolute;
     top: 50%;
+    margin-top: -15px;
     right: -14px
 }
 .m-manual .manual-tab .tab-util .item {
