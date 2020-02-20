@@ -25,6 +25,7 @@ body { margin: 0; }
 .icon-check { background-image: url(images/check.png); }
 .icon-import { background-image: url(images/upload.png); }
 .icon-swap { background-image: url(images/swap.png); }
+.icon-wrap { background-image: url(images/wrap.png); }
 .icon-arrow-right { background-image: url(images/arrow-right.png); }
 .icon-arrow-right-v { background-image: url(images/arrow-right-v.png); }
 .icon-arrow-right-vv { background-image: url(images/arrow-right-vv.png); }
