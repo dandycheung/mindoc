@@ -6,17 +6,16 @@ $(function () {
     editor.config.uploadImgUrl = window.imageUploadURL;
     editor.config.uploadImgFileName = "editormd-image-file";
     editor.config.uploadParams = {
-        "editor" : "wangEditor"
+        "editor": "wangEditor"
     };
-    wangEditor.config.menus.splice(0,0,"|");
-    wangEditor.config.menus.splice(0,0,"history");
-    wangEditor.config.menus.splice(0,0,"save");
-    wangEditor.config.menus.splice(0,0,"release");
-    wangEditor.config.menus.splice(29,0,"attach")
+    wangEditor.config.menus.splice(0, 0, "|");
+    wangEditor.config.menus.splice(0, 0, "history");
+    wangEditor.config.menus.splice(0, 0, "save");
+    wangEditor.config.menus.splice(0, 0, "release");
+    wangEditor.config.menus.splice(29, 0, "attach")
 
-    //移除地图、背景色
-    editor.config.menus = $.map(wangEditor.config.menus, function(item, key) {
-
+    // 移除地图、背景色
+    editor.config.menus = $.map(wangEditor.config.menus, function (item, key) {
         if (item === 'fullscreen') {
             return null;
         }
@@ -25,25 +24,24 @@ $(function () {
     });
 
     window.editor.ready(function () {
-        if(window.documentCategory.length > 0){
-            var item =  window.documentCategory[0];
-            var $select_node = { node : {id : item.id}};
+        if (window.documentCategory.length > 0) {
+            var item = window.documentCategory[0];
+            var $select_node = { node: { id: item.id } };
             loadDocument($select_node);
         }
-
     });
 
     window.editor.config.uploadImgFns.onload = function (resultText, xhr) {
-        // resultText 服务器端返回的text
-        // xhr 是 xmlHttpRequest 对象，IE8、9中不支持
+        // resultText 服务器端返回的 text
+        // xhr 是 xmlHttpRequest 对象，IE8、9 中不支持
 
         // 上传图片时，已经将图片的名字存在 editor.uploadImgOriginalName
         var originalName = editor.uploadImgOriginalName || '';
 
         var res = jQuery.parseJSON(resultText);
-        if (res.errcode === 0){
+        if (res.errcode === 0) {
             editor.command(null, 'insertHtml', '<img src="' + res.url + '" alt="' + res.alt + '" style="max-width:100%;"/>');
-        }else{
+        } else {
             layer.msg(res.message);
         }
     };
@@ -60,8 +58,7 @@ $(function () {
     window.editor.create();
 
 
-    $("#htmlEditor").css("height","100%");
-
+    $("#htmlEditor").css("height", "100%");
 
 
     /***
@@ -70,25 +67,25 @@ $(function () {
      */
     function loadDocument($node) {
         var index = layer.load(1, {
-            shade: [0.1,'#fff'] //0.1透明度的白色背景
+            shade: [0.1, '#fff'] // 0.1 透明度的白色背景
         });
 
         $.get(window.editURL + $node.node.id ).done(function (res) {
             layer.close(index);
 
-            if(res.errcode === 0){
+            if (res.errcode === 0) {
                 window.isLoad = true;
                 window.editor.clear();
                 window.editor.$txt.html(res.data.content);
+
                 // 将原始内容备份
                 window.source = res.data.content;
-                var node = { "id" : res.data.doc_id,'parent' : res.data.parent_id === 0 ? '#' : res.data.parent_id ,"text" : res.data.doc_name,"identify" : res.data.identify,"version" : res.data.version};
+                var node = { "id": res.data.doc_id, 'parent': res.data.parent_id === 0 ? '#' : res.data.parent_id, "text": res.data.doc_name, "identify": res.data.identify, "version": res.data.version };
                 pushDocumentCategory(node);
                 window.selectNode = node;
 
                 pushVueLists(res.data.attach);
-
-            }else{
+            } else {
                 layer.msg("文档加载失败");
             }
         }).fail(function () {
@@ -101,66 +98,70 @@ $(function () {
      * 保存文档到服务器
      * @param $is_cover 是否强制覆盖
      */
-    function saveDocument($is_cover,callback) {
+    function saveDocument($is_cover, callback) {
         var index = null;
         var node = window.selectNode;
 
-        var html = window.editor.$txt.html() ;
+        var html = window.editor.$txt.html();
 
         var content = "";
-        if($.trim(html) !== ""){
+        if ($.trim(html) !== "") {
             content = toMarkdown(html, { gfm: true });
         }
+
         var version = "";
 
-        if(!node){
+        if (!node) {
             layer.msg("获取当前文档信息失败");
             return;
         }
+
         var doc_id = parseInt(node.id);
 
-        for(var i in window.documentCategory){
+        for (var i in window.documentCategory) {
             var item = window.documentCategory[i];
-
-            if(item.id === doc_id){
+            if (item.id === doc_id) {
                 version = item.version;
                 break;
             }
         }
-        $.ajax({
-            beforeSend  : function () {
-                index = layer.load(1, {shade: [0.1,'#fff'] });
-            },
-            url :  window.editURL,
-            data : {"identify" : window.book.identify,"doc_id" : doc_id,"markdown" : content,"html" : html,"cover" : $is_cover ? "yes":"no","version": version},
-            type :"post",
-            dataType :"json",
-            success : function (res) {
-                layer.close(index);
-                if(res.errcode === 0){
-                    for(var i in window.documentCategory){
-                        var item = window.documentCategory[i];
 
-                        if(item.id === doc_id){
+        $.ajax({
+            beforeSend: function () {
+                index = layer.load(1, { shade: [0.1, '#fff'] });
+            },
+            url:  window.editURL,
+            data: { "identify": window.book.identify, "doc_id": doc_id, "markdown": content, "html": html, "cover": $is_cover ? "yes" : "no", "version": version },
+            type: "post",
+            dataType: "json",
+            success: function (res) {
+                layer.close(index);
+                if (res.errcode === 0) {
+                    for (var i in window.documentCategory) {
+                        var item = window.documentCategory[i];
+                        if (item.id === doc_id) {
                             window.documentCategory[i].version = res.data.version;
                             break;
                         }
                     }
+
                     // 更新内容备份
                     window.source = res.data.content;
+
                     // 触发编辑器 onchange 回调函数
                     window.editor.onchange();
-                    if(typeof callback === "function"){
+
+                    if (typeof callback === "function") {
                         callback();
                     }
-                }else if(res.errcode === 6005){
+                } else if (res.errcode === 6005) {
                     var confirmIndex = layer.confirm('文档已被其他人修改确定覆盖已存在的文档吗？', {
-                        btn: ['确定','取消'] //按钮
-                    }, function(){
+                        btn: ['确定', '取消'] // 按钮
+                    }, function () {
                         layer.close(confirmIndex);
-                        saveDocument(true,callback);
+                        saveDocument(true, callback);
                     });
-                }else{
+                } else {
                     layer.msg(res.message);
                 }
             }
@@ -172,33 +173,33 @@ $(function () {
      * 添加顶级文档
      */
     $("#addDocumentForm").ajaxForm({
-        beforeSubmit : function () {
+        beforeSubmit: function () {
             var doc_name = $.trim($("#documentName").val());
-            if (doc_name === ""){
-                return showError("目录名称不能为空","#add-error-message")
+            if (doc_name === "") {
+                return showError("目录名称不能为空", "#add-error-message")
             }
-            window.addDocumentFormIndex = layer.load(1, { shade: [0.1,'#fff']  });
+
+            window.addDocumentFormIndex = layer.load(1, { shade: [0.1, '#fff'] });
             return true;
         },
-        success : function (res) {
-            if(res.errcode === 0){
-
-                var data = { "id" : res.data.doc_id,'parent' : res.data.parent_id === 0 ? '#' : res.data.parent_id ,"text" : res.data.doc_name,"identify" : res.data.identify,"version" : res.data.version};
+        success: function (res) {
+            if (res.errcode === 0) {
+                var data = { "id": res.data.doc_id, 'parent': res.data.parent_id === 0 ? '#' : res.data.parent_id, "text": res.data.doc_name, "identify": res.data.identify, "version": res.data.version };
 
                 var node = window.treeCatalog.get_node(data.id);
-                if(node){
-                    window.treeCatalog.rename_node({"id":data.id},data.text);
-
-                }else {
+                if (node) {
+                    window.treeCatalog.rename_node({ "id": data.id }, data.text);
+                } else {
                     window.treeCatalog.create_node(data.parent, data);
                     window.treeCatalog.deselect_all();
                     window.treeCatalog.select_node(data);
                 }
+
                 pushDocumentCategory(data);
                 $("#markdown-save").removeClass('change').addClass('disabled');
                 $("#addDocumentModal").modal('hide');
-            }else{
-                showError(res.message,"#add-error-message")
+            } else {
+                showError(res.message, "#add-error-message")
             }
             layer.close(window.addDocumentFormIndex);
         }
@@ -231,10 +232,8 @@ $(function () {
                     "label": "添加文档",
                     "icon": "fa fa-plus",
                     "action": function (data) {
-
-                        var inst = $.jstree.reference(data.reference),
-                            node = inst.get_node(data.reference);
-
+                        var inst = $.jstree.reference(data.reference);
+                        var node = inst.get_node(data.reference);
                         openCreateCatalogDialog(node);
                     }
                 },
@@ -269,39 +268,39 @@ $(function () {
     }).on('select_node.jstree', function (node, selected, event) {
         if(window.editor.menus.save.$domNormal.hasClass('selected')) {
             if(confirm("编辑内容未保存，需要保存吗？")){
-                saveDocument(false,function () {
+                saveDocument(false, function () {
                     loadDocument(selected);
                 });
                 return true;
             }
         }
-        loadDocument(selected);
 
+        loadDocument(selected);
     }).on("move_node.jstree", jstree_save);
 
     window.saveDocument = saveDocument;
 
     window.releaseBook = function () {
-        if(Object.prototype.toString.call(window.documentCategory) === '[object Array]' && window.documentCategory.length > 0){
-            if(window.editor.menus.save.$domNormal.hasClass('selected')) {
-                if(confirm("编辑内容未保存，需要保存吗？")) {
+        if (Object.prototype.toString.call(window.documentCategory) === '[object Array]' && window.documentCategory.length > 0){
+            if (window.editor.menus.save.$domNormal.hasClass('selected')) {
+                if (confirm("编辑内容未保存，需要保存吗？")) {
                     saveDocument();
                 }
             }
             $.ajax({
-                url : window.releaseURL,
-                data :{"identify" : window.book.identify },
-                type : "post",
-                dataType : "json",
-                success : function (res) {
-                    if(res.errcode === 0){
+                url: window.releaseURL,
+                data: { "identify": window.book.identify },
+                type: "post",
+                dataType: "json",
+                success: function (res) {
+                    if (res.errcode === 0) {
                         layer.msg("发布任务已推送到任务队列，稍后将在后台执行。");
-                    }else{
+                    } else {
                         layer.msg(res.message);
                     }
                 }
             });
-        }else{
+        } else {
             layer.msg("没有需要发布的文档")
         }
     };

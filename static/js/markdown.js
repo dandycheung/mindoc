@@ -165,7 +165,7 @@ $(function () {
                 try {
                     window.editor.clear();
                     window.editor.insertValue(res.data.markdown);
-                    window.editor.setCursor({line: 0, ch: 0});
+                    window.editor.setCursor({ line: 0, ch: 0 });
                 } catch(e) {
                     console.log(e);
                 }
@@ -264,7 +264,6 @@ $(function () {
             }
         });
     }
-    
 
     /**
      * 设置编辑器变更状态
@@ -349,9 +348,8 @@ $(function () {
                     "label": "添加文档",
                     "icon": "fa fa-plus",
                     "action": function (data) {
-                        var inst = $.jstree.reference(data.reference),
-                            node = inst.get_node(data.reference);
-
+                        var inst = $.jstree.reference(data.reference);
+                        var node = inst.get_node(data.reference);
                         openCreateCatalogDialog(node);
                     }
                 },
@@ -381,7 +379,7 @@ $(function () {
                 }
             }
         }
-    }).on("ready.jstree",function () {
+    }).on("ready.jstree", function () {
         window.treeCatalog = $("#sidebar").jstree(true);
 
         // 如果没有选中节点则选中默认节点
@@ -406,6 +404,7 @@ $(function () {
     }).on("move_node.jstree", jstree_save).on("delete_node.jstree", function($node, $parent) {
         openLastSelectedNode();
     });
+
     /**
      * 打开文档模板
      */
@@ -425,6 +424,7 @@ $(function () {
         }
         $("#documentTemplateModal").modal('hide');
     });
+
     /**
      * 展示自定义模板列表
      */
@@ -437,7 +437,7 @@ $(function () {
                 index = layer.load(1, { shade: [0.1, '#fff'] });
             },
            url: window.template.listUrl,
-           data: {"identify":window.book.identify},
+           data: { "identify": window.book.identify },
            type: "POST",
            dataType: "html",
             success: function ($res) {
@@ -455,6 +455,7 @@ $(function () {
         var cache = window.sessionStorage.getItem("displayCustomsTemplateList");
         $("#displayCustomsTemplateList").html(cache);
     });
+
     /**
      * 添加模板
      */
@@ -485,17 +486,19 @@ $(function () {
             $("#btnSaveTemplate").button("reset");
         }
     });
+
     /**
      * 当添加模板弹窗事件发生
      */
     $("#saveTemplateModal").on("show.bs.modal", function () {
-        window.sessionStorage.setItem("saveTemplateModal",$(this).find(".modal-body").html());
+        window.sessionStorage.setItem("saveTemplateModal", $(this).find(".modal-body").html());
         var content = window.editor.getMarkdown();
         $("#saveTemplateForm").find("input[name='content']").val(content);
         $("#saveTemplateForm .show-error-message").html("");
     }).on("hidden.bs.modal", function () {
         $(this).find(".modal-body").html(window.sessionStorage.getItem("saveTemplateModal"));
     });
+
     /**
      * 插入自定义模板内容
      */
@@ -504,7 +507,7 @@ $(function () {
 
         $.ajax({
             url: window.template.getUrl,
-            data: {"identify": window.book.identify, "template_id": templateId},
+            data: { "identify": window.book.identify, "template_id": templateId },
             dataType: "json",
             type: "get",
             success: function ($res) {
@@ -530,7 +533,7 @@ $(function () {
 
         $.ajax({
             url: window.template.deleteUrl,
-            data: {"identify": window.book.identify, "template_id": templateId},
+            data: { "identify": window.book.identify, "template_id": templateId },
             dataType: "json",
             type: "post",
             success: function ($res) {
@@ -539,7 +542,7 @@ $(function () {
                 } else {
                     $then.parents("tr").empty().remove();
                 }
-            }, 
+            },
             error: function () {
                 layer.msg("服务器异常");
             },
@@ -549,24 +552,25 @@ $(function () {
         })
     });
 
-    $("#btnInsertTable").on("click",function () {
+    $("#btnInsertTable").on("click", function () {
        var content = $("#jsonContent").val();
        if(content !== "") {
            try {
                var jsonObj = $.parseJSON(content);
                var data = foreachJson(jsonObj, "");
                var table = "| 参数名称  | 参数类型  | 示例值  |  备注 |\n| ------------ | ------------ | ------------ | ------------ |\n";
-               $.each(data,function (i, item) {
+               $.each(data, function (i, item) {
                     table += "|" + item.key + "|" + item.type + "|" + item.value + "| |\n";
                });
-                insertToMarkdown(table);
-           }catch (e) {
+               insertToMarkdown(table);
+           } catch (e) {
                showError("Json 格式错误:" + e.toString(), "#json-error-message");
                return;
            }
        }
        $("#convertJsonToTableModal").modal("hide");
     });
+
     $("#convertJsonToTableModal").on("hidden.bs.modal", function () {
         $("#jsonContent").val("");
     }).on("shown.bs.modal", function () {
