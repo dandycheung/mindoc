@@ -786,6 +786,13 @@ func (c *DocumentController) Export() {
 		c.ShowErrorPage(500, "参数错误")
 	}
 
+	// 如果没有指定文档 ID，则为整个项目
+	id := c.Ctx.Input.Param(":id")
+	docId, err := strconv.Atoi(id)
+	if err != nil {
+		docId = -1
+	}
+
 	output := c.GetString("output")
 	token := c.GetString("token")
 
@@ -810,6 +817,7 @@ func (c *DocumentController) Export() {
 				c.ShowErrorPage(500, "查找项目时出错")
 			}
 		}
+
 		bookResult = models.NewBookResult().ToBookResult(*book)
 	} else {
 		bookResult = c.isReadable(identify, token)
@@ -819,126 +827,46 @@ func (c *DocumentController) Export() {
 		c.ShowErrorPage(200, "当前项目没有开启导出功能")
 	}
 
-	if !strings.HasPrefix(bookResult.Cover, "http:://") && !strings.HasPrefix(bookResult.Cover, "https:://") {
-		bookResult.Cover = conf.URLForWithCdnImage(bookResult.Cover)
+	// 临时定一个接口，方便后续统一调用
+	type MarkdownExportor interface {
+		ExportMarkdown(sessionId string) (string, error)
 	}
 
-	if output == "markdown" {
-		if bookResult.Editor != "markdown" {
-			c.ShowErrorPage(500, "当前项目不支持Markdown编辑器")
+	var exportor MarkdownExportor
+	var doc *models.Document
+
+	if docId == -1 {	// book
+		if !strings.HasPrefix(bookResult.Cover, "http:://") && !strings.HasPrefix(bookResult.Cover, "https:://") {
+			bookResult.Cover = conf.URLForWithCdnImage(bookResult.Cover)
 		}
 
-		p, err := bookResult.ExportMarkdown(c.CruSession.SessionID())
-		if err != nil {
-			c.ShowErrorPage(500, "导出文档失败")
-		}
+		exportor = bookResult
+	} else {			// doc
+		doc = models.NewDocument()
 
-		c.Ctx.Output.Download(p, bookResult.BookName+".zip")
-
-		c.StopRun()
-		return
-	}
-
-	outputPath := filepath.Join(conf.GetExportOutputPath(), strconv.Itoa(bookResult.BookId))
-
-	pdfpath := filepath.Join(outputPath, "book.pdf")
-	epubpath := filepath.Join(outputPath, "book.epub")
-	mobipath := filepath.Join(outputPath, "book.mobi")
-	docxpath := filepath.Join(outputPath, "book.docx")
-
-	if output == "pdf" && filetil.FileExists(pdfpath) {
-		c.Ctx.Output.Download(pdfpath, bookResult.BookName+".pdf")
-		c.Abort("200")
-	} else if output == "epub" && filetil.FileExists(epubpath) {
-		c.Ctx.Output.Download(epubpath, bookResult.BookName+".epub")
-
-		c.Abort("200")
-	} else if output == "mobi" && filetil.FileExists(mobipath) {
-		c.Ctx.Output.Download(mobipath, bookResult.BookName+".mobi")
-
-		c.Abort("200")
-	} else if output == "docx" && filetil.FileExists(docxpath) {
-		c.Ctx.Output.Download(docxpath, bookResult.BookName+".docx")
-
-		c.Abort("200")
-	} else if output == "pdf" || output == "epub" || output == "docx" || output == "mobi" {
-		if err := models.BackgroundConvert(c.CruSession.SessionID(), bookResult); err != nil && err != gopool.ErrHandlerIsExist {
-			c.ShowErrorPage(500, "导出失败，请查看系统日志")
-		}
-
-		c.ShowErrorPage(200, "文档正在后台转换，请稍后再下载")
-	} else {
-		c.ShowErrorPage(200, "不支持的文件格式")
-	}
-
-	c.ShowErrorPage(404, "项目没有导出文件")
-}
-
-func (c *DocumentController) ExportDoc() {
-	c.Prepare()
-
-	identify := c.Ctx.Input.Param(":key")
-	id := c.Ctx.Input.Param(":id")
-	token := c.GetString("token")
-	output := c.GetString("output")
-
-	if identify == "" || id == "" {
-		c.ShowErrorPage(404, "项目不存或已删除")
-	}
-
-	// 如果没有开启匿名访问则跳转到登录
-	if !c.EnableAnonymous && !c.isUserLoggedIn() {
-		promptUserToLogIn(c)
-		return
-	}
-
-	if !conf.GetEnableExport() {
-		c.ShowErrorPage(500, "系统没有开启导出功能")
-	}
-
-	bookResult := models.NewBookResult()
-	if c.Member != nil && c.Member.IsAdministrator() {
-		book, err := models.NewBook().FindByIdentify(identify)
-		if err != nil {
-			if err == orm.ErrNoRows {
-				c.ShowErrorPage(404, "项目不存在")
-			} else {
-				beego.Error("查找项目时出错 ->", err)
-				c.ShowErrorPage(500, "查找项目时出错")
-			}
-		}
-
-		bookResult = models.NewBookResult().ToBookResult(*book)
-	} else {
-		bookResult = c.isReadable(identify, token)
-	}
-
-	doc := models.NewDocument()
-
-	if docId, err := strconv.Atoi(id); err == nil {
 		doc, err = doc.FromCacheById(docId)
 		if err != nil {
 			beego.Error("从缓存中读取文档时失败 ->", err)
 			c.ShowErrorPage(404, "文档不存在或已删除")
-		}
-	} else {
-		doc, err = doc.FromCacheByIdentify(id, bookResult.BookId)
-		if err != nil {
-			if err == orm.ErrNoRows {
-				c.ShowErrorPage(404, "文档不存在或已删除")
-			} else {
+		} else if doc.DocumentId <= 0 {
+		    // 此处作最大程度的兼容，如果上一步根据 DocumentId 查询没有结果，则此处再次按照文档的 Identity 查一次，
+		    // 这两个成员请参见 DocumentModel.go 源文件。
+			doc, err = doc.FromCacheByIdentify(id, bookResult.BookId)
+			if err != nil {
 				beego.Error("从缓存查询文档时出错 ->", err)
-				c.ShowErrorPage(500, "未知异常")
+				if err == orm.ErrNoRows {
+					c.ShowErrorPage(404, "文档不存在或已删除")
+				} else {
+					c.ShowErrorPage(500, "未知异常")
+				}
 			}
 		}
-	}
 
-	if doc.BookId != bookResult.BookId {
-		c.ShowErrorPage(404, "文档不存在或已删除")
-	}
+		if doc.BookId != bookResult.BookId {
+			c.ShowErrorPage(404, "文档不存在或已删除")
+		}
 
-	if !bookResult.IsDownload {
-		c.ShowErrorPage(200, "当前项目没有开启导出功能")
+		exportor = doc
 	}
 
 	if output == "markdown" {
@@ -946,7 +874,7 @@ func (c *DocumentController) ExportDoc() {
 			c.ShowErrorPage(500, "当前项目不支持 Markdown 编辑器")
 		}
 
-		p, err := doc.ExportMarkdown(c.CruSession.SessionID())
+		p, err := exportor.ExportMarkdown(c.CruSession.SessionID())
 		if err != nil {
 			c.ShowErrorPage(500, "导出文档失败")
 		}
@@ -957,26 +885,22 @@ func (c *DocumentController) ExportDoc() {
 		return
 	}
 
-	outputPath := filepath.Join(conf.GetExportOutputPath(), strconv.Itoa(bookResult.BookId))
-	documentId := strconv.Itoa(doc.DocumentId)
-	pdfpath := filepath.Join(outputPath, documentId + ".pdf")
-	epubpath := filepath.Join(outputPath, documentId + ".epub")
-	mobipath := filepath.Join(outputPath, documentId + ".mobi")
-	docxpath := filepath.Join(outputPath, documentId + ".docx")
+	if output == "pdf" || output == "epub" || output == "docx" || output == "mobi" {
+		outputPath := filepath.Join(conf.GetExportOutputPath(), strconv.Itoa(bookResult.BookId))
+		fname := "book"
+		if docId != -1 {
+			fname = strconv.Itoa(doc.DocumentId)
+		}
 
-	if output == "pdf" && filetil.FileExists(pdfpath) {
-		c.Ctx.Output.Download(pdfpath, documentId + ".pdf")
-		c.Abort("200")
-	} else if output == "epub" && filetil.FileExists(epubpath) {
-		c.Ctx.Output.Download(epubpath, documentId + ".epub")
-		c.Abort("200")
-	} else if output == "mobi" && filetil.FileExists(mobipath) {
-		c.Ctx.Output.Download(mobipath, documentId + ".mobi")
-		c.Abort("200")
-	} else if output == "docx" && filetil.FileExists(docxpath) {
-		c.Ctx.Output.Download(docxpath, documentId + ".docx")
-		c.Abort("200")
-	} else if output == "pdf" || output == "epub" || output == "docx" || output == "mobi" {
+		fullPath := filepath.Join(outputPath, fname + "." + output)
+		if filetil.FileExists(fullPath) {
+			if docId == -1 {
+				fname = bookResult.BookName
+			}
+			c.Ctx.Output.Download(fullPath, fname + "." + output)
+			c.Abort("200")
+		}
+
 		if err := models.BackgroundConvert(c.CruSession.SessionID(), bookResult); err != nil && err != gopool.ErrHandlerIsExist {
 			c.ShowErrorPage(500, "导出失败，请查看系统日志")
 		}
@@ -1015,7 +939,7 @@ func (c *DocumentController) QrCode() {
 
 	c.Ctx.ResponseWriter.Header().Set("Content-Type", "image/png")
 
-	// imgpath := filepath.Join("cache","qrcode",identify + ".png")
+	// imgpath := filepath.Join("cache", "qrcode", identify + ".png")
 
 	err = png.Encode(c.Ctx.ResponseWriter, code)
 	if err != nil {
@@ -1398,6 +1322,6 @@ func promptUserToLogIn(c *DocumentController) {
 	if c.IsAjax() {
 		c.JsonResult(6000, "请重新登录。")
 	} else {
-		c.Redirect(conf.URLFor("AccountController.Login")+"?url="+url.PathEscape(conf.BaseUrl+c.Ctx.Request.URL.RequestURI()), 302)
+		c.Redirect(conf.URLFor("AccountController.Login") + "?url=" + url.PathEscape(conf.BaseUrl + c.Ctx.Request.URL.RequestURI()), 302)
 	}
 }

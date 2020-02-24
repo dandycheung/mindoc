@@ -70,20 +70,20 @@
                         </button>
                         <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel" style="margin-top: -5px;">
                             <li class="dropdown-header">当前文档</li>
-                            <li><a href="javascript:exportDoc('pdf')" >PDF</a> </li>
-                            <li><a href="javascript:exportDoc('epub')" >EPUB</a> </li>
-                            <li><a href="javascript:exportDoc('mobi')" >MOBI</a> </li>
-                            <li><a href="javascript:exportDoc('docx')" >Word</a> </li>
+                            <li><a href="javascript:exportDoc('pdf')">PDF</a> </li>
+                            <li><a href="javascript:exportDoc('epub')">ePub</a> </li>
+                            <li><a href="javascript:exportDoc('mobi')">Mobi</a> </li>
+                            <li><a href="javascript:exportDoc('docx')">Word</a> </li>
                             {{if eq .Model.Editor "markdown"}}
-                            <li><a href="javascript:exportDoc('markdown')" >Markdown</a> </li>
+                            <li><a href="javascript:exportDoc('markdown')">Markdown</a> </li>
                             {{end}}
                             <li class="dropdown-header">全部文档</li>
-                            <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "pdf"}}" target="_blank">PDF</a> </li>
-                            <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "epub"}}" target="_blank">EPUB</a> </li>
-                            <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "mobi"}}" target="_blank">MOBI</a> </li>
-                            <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "docx"}}" target="_blank">Word</a> </li>
+                            <li><a href="javascript:exportBook('pdf')">PDF</a> </li>
+                            <li><a href="javascript:exportBook('epub')">ePub</a> </li>
+                            <li><a href="javascript:exportBook('mobi')">Mobi</a> </li>
+                            <li><a href="javascript:exportBook('docx')">Word</a> </li>
                             {{if eq .Model.Editor "markdown"}}
-                            <li><a href="{{urlfor "DocumentController.Export" ":key" .Model.Identify "output" "markdown"}}" target="_blank">Markdown</a> </li>
+                            <li><a href="javascript:exportBook('markdown')">Markdown</a> </li>
                             {{end}}
                         </ul>
                     {{end}}
@@ -323,6 +323,9 @@ window.documentHistory = function () {
 
     // var key = "{{ .Model.Identify }}";
     var docId = $(currentLi).attr("id");
+    if (!docId) {
+        return;
+    }
 
     layer.open({
         type: 2,
@@ -339,9 +342,32 @@ window.documentHistory = function () {
 function exportDoc(type)
 {
     var currentLi = $('li[aria-selected="true"]')[0]
-    var key = "{{ .Model.Identify }}";
+    if (!currentLi) {
+        layer.msg("请先选中一篇文章，以对其进行导出。");
+        return;
+    }
+
     var docId = $(currentLi).attr("id");
-    var docExportUrl = "/export/" + key + "/" + docId + "?output=" + type;
+    if (!docId) {
+        return;
+    }
+
+    var key = "{{ .Model.Identify }}";
+    var docExportUrl = "/export/" + key;
+
+    docExportUrl += "/" + docId;
+    docExportUrl += "?output=" + type;
+
+    window.open(docExportUrl);
+}
+
+function exportBook(type)
+{
+    var key = "{{ .Model.Identify }}";
+    var docExportUrl = "/export/" + key;
+
+    docExportUrl += "?output=" + type;
+
     window.open(docExportUrl);
 }
 
