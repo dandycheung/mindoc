@@ -41,7 +41,7 @@
     <li id="tb-edit-left-merge-right" data-icon="icon-arrow-right-v" title="合并到右侧">合并到右侧</li>
     {{end}}
     <li id="tb-view-swap" data-icon="icon-swap" title="左右切换">左右切换</li>
-    <li id="tb-option-wrap" data-icon="icon-wrap" title="长行回绕">长行回绕</li>
+    <li id="tb-options-wrap" data-icon="icon-wrap" title="长行回绕">长行回绕</li>
 </ul>
 
 <!-- find -->
