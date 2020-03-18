@@ -393,8 +393,8 @@ func (item *Document) ExportMarkdown(sessionId string) (string, error) {
 	documentId := strconv.Itoa(item.DocumentId)
 	bookId := strconv.Itoa(item.BookId)
 
-	outputPath := filepath.Join(conf.WorkingDirectory, "uploads", "documents", bookId , documentId + ".zip")
-	os.MkdirAll(filepath.Dir(outputPath), 0644)
+	outputPath := filepath.Join(conf.WorkingDirectory, "uploads", "documents", bookId, documentId + ".zip")
+	os.MkdirAll(filepath.Dir(outputPath), 0755)
 
 	tempOutputPath := filepath.Join(os.TempDir(), sessionId, "markdown_doc_" + documentId)
 
